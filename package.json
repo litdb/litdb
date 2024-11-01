@@ -27,12 +27,12 @@
     "mysql"
   ],
   "license": "BSD-3-Clause",
-  "homepage": "https://github.com/litdb/db",
+  "homepage": "https://github.com/litdb/litdb",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/litdb/db.git"
+    "url": "git+https://github.com/litdb/litdb.git"
   },
-  "bugs": "https://github.com/litdb/db/issues",
+  "bugs": "https://github.com/litdb/litdb/issues",
   "author": "Demis Bellot <https://github.com/mythz>",
   "devDependencies": {
     "bun-plugin-dts": "^0.3.0",
