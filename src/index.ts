@@ -5,7 +5,7 @@ import { DeleteQuery } from "./builders/delete"
 import { Sql } from "./query"
 import { Inspect } from "./inspect"
 import { converterFor, DateTimeConverter } from "./converters"
-import { DataType, DefaultValues } from "./model"
+import { table, column, Table, DefaultValues, DataType } from "./model"
 
 export { 
   Sql,
@@ -19,6 +19,9 @@ export {
   Inspect,
   converterFor,
   DateTimeConverter,
-  DataType, 
+  table,
+  column,
+  Table,
   DefaultValues,
+  DataType,
 }

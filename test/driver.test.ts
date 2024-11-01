@@ -23,4 +23,5 @@ describe('SQLite Driver Tests', () => {
         expect(contact.firstName).toBe('Jane')
         expect(contact.lastName).toBe('Smith')
     })
+
 })
