@@ -1,7 +1,7 @@
 {
   "name": "@litdb/db",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,7 +14,7 @@
   "scripts": {
     "build": "bun run build.ts",
     "prepublishOnly": "bun run build",
-    "release": "bump patch --commit --push --tag && npm publish"
+    "release": "bump patch --commit --push --tag && npm publish --access public"
   },
   "files": [
     "dist"
