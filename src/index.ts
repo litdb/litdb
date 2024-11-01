@@ -1,3 +1,4 @@
+import type { ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, TypeConverter } from "./types"
 import { Connection, ConnectionBase, NamingStrategy, SyncConnection } from "./connection"
 import { WhereQuery } from "./builders/where"
 import { SelectQuery } from "./builders/select"
@@ -24,4 +25,5 @@ export {
   Table,
   DefaultValues,
   DataType,
+  ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, TypeConverter,
 }
