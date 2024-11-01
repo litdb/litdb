@@ -124,10 +124,10 @@ class SqliteDriver implements Driver
 
     constructor(db:Database) {
         this.db = db
+        this.$ = Sql.create(this)
         this.async = new Connection(this)
         this.sync = new SyncConnection(this)
         this.name = this.constructor.name
-        this.$ = Sql.create(this)
     }
 
     quote(name: string): string { return `"${name}"` }

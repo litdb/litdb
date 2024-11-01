@@ -2,7 +2,7 @@ import { describe, it, expect } from 'bun:test'
 import type { SqlBuilder } from '../src/types'
 import { Contact, DynamicPerson, Freight, Order, OrderItem, Person } from './data'
 import { str } from './utils'
-import { sync as db } from './db'
+import { sync as db, $ } from './db'
 
 describe('SQLite SelectQuery Tests', () => {
 

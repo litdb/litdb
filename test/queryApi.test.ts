@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import type { SqlBuilder } from '../src/types'
 import { Contact, Freight, Order } from './data'
-import { sync as db } from './db'
+import { sync as db, $ } from './db'
 
 describe('SelectQuery API Tests', () => {
 
