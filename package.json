@@ -21,7 +21,7 @@
   "keywords": [
     "bun"
   ],
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "homepage": "https://github.com/litdb/db",
   "repository": {
     "type": "git",
