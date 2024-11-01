@@ -1,13 +1,53 @@
 import { Database, Statement as BunStatement } from "bun:sqlite"
-import type { ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, TypeConverter } from "../../src/types"
-import { Connection, NamingStrategy, SyncConnection } from "../../src/connection"
-import { DataType, DefaultValues } from "../../src/model"
-import { converterFor, DateTimeConverter } from "../../src/converters"
-import { Sql } from "../../src/query"
+import type { ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, TypeConverter } from "../../src"
+import { 
+    Sql, Connection, NamingStrategy, SyncConnection, DataType, DefaultValues, converterFor, DateTimeConverter
+} from "../../src"
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
 
-export function connect(options?:{ wal?:boolean, strict?:boolean }|string) {
+type ConnectionOptions = {
+    /**
+     * Whether to enable WAL
+     * @default "app.db"
+     */
+    fileName?:string
+    /**
+     * Whether to enable WAL
+     * @default true
+     */
+    wal?:boolean
+    /**
+     * Open the database as read-only (no write operations, no create).
+     */
+    readonly?: boolean
+    /**
+     * Allow creating a new database
+     */
+    create?: boolean;
+    /**
+     * Open the database as read-write
+     */
+    readwrite?: boolean;
+    /**
+     * When set to `true`, integers are returned as `bigint` types.
+     * When set to `false`, integers are returned as `number` types and truncated to 52 bits.
+     * @default false
+     */
+    safeIntegers?: boolean;
+    /**
+     * When set to `false` or `undefined`:
+     * - Queries missing bound parameters will NOT throw an error
+     * - Bound named parameters in JavaScript need to exactly match the SQL query.
+     * @default true
+     */
+    strict?: boolean;
+}
+
+/**
+ * Create a bun:sqlite SqliteDriver with the specified connection options
+ */
+export function connect(options?:ConnectionOptions|string) {
     if (typeof options == 'string') {
         const db = new Database(options, { 
             strict: true 
@@ -16,9 +56,11 @@ export function connect(options?:{ wal?:boolean, strict?:boolean }|string) {
         return new SqliteDriver(db)
     }
 
-    const db = new Database("app.db", { 
-        strict: options?.strict != null ? options.strict : true
-    })
+    options = options || {}
+    if (options.strict !== false) options.strict = true
+    if (options.wal !== false) options.wal = true 
+    
+    const db = new Database(options.fileName ?? "app.db", options)
     if (options?.wal === false) {
         db.exec(ENABLE_WAL)
     }
