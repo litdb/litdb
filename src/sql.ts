@@ -3,7 +3,7 @@ import type {
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta, Schema } from "./connection"
-import { mergeParams, nextParam } from "./utils"
+import { mergeParams } from "./utils"
 import { alignRight } from "./inspect"
 
 export class Sql

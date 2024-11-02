@@ -42,24 +42,20 @@ export function column(type:ColumnType|symbol, options?: {
 }
 
 // Fluent definition to apply @column and @table to any JS class
-export function Table<T extends Constructor<any>>(
-    cls: new () => T,
-    definition: TableDefinition<T>) {
+export function Table<T extends Constructor<any>>(cls:T, definition: TableDefinition<T>) {
     if (!definition) throw new Error('Table definition is required')
 
     const meta = cls as any
     if (!meta.$id) meta.$id = Symbol(cls.name)
-        // Set the table name and alias if provided
+    // Set the table name and alias if provided
     meta.$type ??= { name:cls.name }
     meta.$type.table = definition.table ?? { }
     meta.$type.table.name ??= cls.name
-
     const props = (meta.$props ?? (meta.$props=[]))
     Object.keys(definition.columns).forEach(name => {
         const column = (definition.columns as any)[name]
         if (!column) throw new Error(`Column definition for ${name} is missing`)
         if (!column.type) throw new Error(`Column type for ${name} is missing`)
-
         let prop = props.find((x:any) => x.name === name)
         if (!prop) {
              prop = { name }
@@ -75,9 +71,9 @@ export function Table<T extends Constructor<any>>(
 }
 
 // Table configuration interface
-interface TableDefinition<T> {
+interface TableDefinition<T extends Constructor<any>> {
     table?: TableConfig
-    columns: ColumnsConfig<T>
+    columns: ColumnsConfig<InstanceType<T>>
 }
 interface TableConfig {
     alias?: string

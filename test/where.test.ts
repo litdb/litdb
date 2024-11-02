@@ -179,7 +179,7 @@ describe('SQLite WHERE Tests', () => {
         const key = 1
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql.replaceAll('\n','')).toBe(`SELECT ${selectPerson}  FROM "Contact" WHERE "id" = $key`)
+            expect(str(sql)).toBe(`SELECT ${selectPerson} FROM "Contact" WHERE "id" = $key`)
             expect(params.key).toBe(key)
         }
 

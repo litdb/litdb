@@ -174,7 +174,7 @@ Table(DynamicPerson, {
         key: { alias: 'id', type:"TEXT", required:true },
         name: { alias: 'firstName', type:"TEXT", required:true },
         surname: { alias: 'lastName', type:"TEXT", required:true },
-        email: { type:"TEXT", required:true },
+        email: { type:"TEXT", required:true },    
     }
 })
 
