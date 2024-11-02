@@ -17,12 +17,12 @@ describe('SQLite HAVING Tests', () => {
             .join(Order, { on:(c,o) => $`${c.id} = ${o.contactId}` })
             .groupBy(c => $`${c.city}`)
             .having(c => $`COUNT(${c.id}) > 5`)
-        )).toContain('FROM "Contact"  JOIN "Order" ON "Contact"."id" = "Order"."contactId" GROUP BY "Contact"."city" HAVING COUNT("Contact"."id") > 5')
+        )).toContain('FROM "Contact" JOIN "Order" ON "Contact"."id" = "Order"."contactId" GROUP BY "Contact"."city" HAVING COUNT("Contact"."id") > 5')
 
-        const expected = 'JOIN "Order" ON "Contact"."id" = "Order"."contactId"' 
-            + ' GROUP BY "Contact"."city"' 
-            + ' HAVING COUNT("Contact"."id") > 5' 
-            + '  AND SUM("Order"."total") < 1000'
+        const expected = str(`JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
+             GROUP BY "Contact"."city" 
+            HAVING COUNT("Contact"."id") > 5 
+               AND SUM("Order"."total") < 1000`)
 
         expect(str(db.from(Contact)
             .join(Order, { on:(c,o) => $`${c.id} = ${o.contactId}` })
@@ -51,21 +51,23 @@ describe('SQLite HAVING Tests', () => {
             .join(Order, { as:'o', on:(c,o) => $`${c.id} = ${o.contactId}` })
             .groupBy(c => $`${c.city}`)
             .having(c => $`COUNT(${c.id}) > 5`)
-        )).toContain('FROM "Contact" c  JOIN "Order" o ON c."id" = o."contactId" GROUP BY c."city" HAVING COUNT(c."id") > 5')
+        )).toContain('FROM "Contact" c JOIN "Order" o ON c."id" = o."contactId" GROUP BY c."city" HAVING COUNT(c."id") > 5')
 
         expect(str(db.from(Contact, 'c')
             .join(Order, { as:'o', on:(c,o) => $`${c.id} = ${o.contactId}` })
             .groupBy(c => $`${c.city}`)
             .having(c => $`COUNT(${c.id}) > 5`)
             .having((_,o) => $`SUM(${o.total}) < 1000`)
-        )).toContain('FROM "Contact" c  JOIN "Order" o ON c."id" = o."contactId" GROUP BY c."city" HAVING COUNT(c."id") > 5')
+        )).toContain('FROM "Contact" c JOIN "Order" o ON c."id" = o."contactId" GROUP BY c."city" HAVING COUNT(c."id") > 5')
     })
 
     it ('Can use mutliple HAVINGs on Contacts and Orders using aliases', () => {
-        const expected = 'FROM "Contact" c  JOIN "Order" o ON c."id" = o."contactId"' 
-        + ' GROUP BY c."city"' 
-        + ' HAVING COUNT(c."id") > 5'
-        + '  AND SUM(o."total") < 1000'
+        const expected = str(`FROM "Contact" c 
+              JOIN "Order" o ON c."id" = o."contactId" 
+             GROUP BY c."city" 
+            HAVING COUNT(c."id") > 5 
+               AND SUM(o."total") < 1000`)
+
         expect(str(db.from(Contact, 'c')
             .join(Order, { as:'o', on:(c,o) => $`${c.id} = ${o.contactId}` })
             .groupBy(c => $`${c.city}`)

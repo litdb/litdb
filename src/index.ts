@@ -3,7 +3,7 @@ import { Connection, ConnectionBase, NamingStrategy, SyncConnection } from "./co
 import { WhereQuery } from "./builders/where"
 import { SelectQuery } from "./builders/select"
 import { DeleteQuery } from "./builders/delete"
-import { Sql } from "./query"
+import { Sql } from "./sql"
 import { Inspect } from "./inspect"
 import { converterFor, DateTimeConverter } from "./converters"
 import { table, column, Table, DefaultValues, DataType } from "./model"

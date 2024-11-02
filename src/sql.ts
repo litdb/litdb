@@ -1,10 +1,10 @@
 import type { 
-    Constructor, ConstructorsToRefs, ConstructorToTypeRef, Driver, Fragment, 
-    GroupByBuilder, HavingBuilder, OrderByBuilder, TypeRef 
+    Constructor, ConstructorsToRefs, ConstructorToTypeRef, Driver, First, Fragment, 
+    GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta, Schema } from "./connection"
-import { SqlJoinBuilder } from "./builders/where"
-import { mergeParams } from "./utils"
+import { mergeParams, nextParam } from "./utils"
+import { alignRight } from "./inspect"
 
 export class Sql
 {
@@ -41,6 +41,14 @@ export class Sql
                     } else if (typeof value == 'object' && value.$ref) {
                         // if referencing proxy itself, return its quoted tableName
                         sb += driver.quoteTable(Schema.assertMeta(value.$ref.cls).tableName)
+                    } else if (typeof value == 'object' && typeof value.build == 'function') {
+                        // Merge params of SqlBuilder and append SQL
+                        const frag = (value as SqlBuilder).build()
+                        sb += mergeParams(sqlParams, frag).replaceAll('\n', '\n      ')
+                    } else if (typeof value == 'object' && typeof value.sql == 'string') {
+                        // Merge params of Sql Fragment and append SQL
+                        const frag = value as Fragment
+                        sb += mergeParams(sqlParams, frag).replaceAll('\n', '\n      ')
                     } else if (value) {
                         const paramIndex = Object.keys(sqlParams).length + 1
                         const name = `${paramIndex}`
@@ -89,6 +97,70 @@ export class Sql
         }
     
         return $
+    }
+}
+
+
+export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBuilder<First<Tables>> {
+    get table() { return this.tables[0] as First<Tables> }
+    tables: Tables
+    refs: ConstructorsToRefs<Tables>
+    $:ReturnType<typeof Sql.create>
+    exprs:{ type:JoinType, expr:((refs:ConstructorsToRefs<Tables>) => Fragment) }[]=[]
+
+    params:Record<string,any> = {}
+    alias:string =''
+    buildOn?:(refs:ConstructorsToRefs<Tables>, params:Record<string,any>) => string
+
+    constructor(public driver:Driver, ...tables:Tables) {
+        this.tables = tables
+        this.$ = driver.$ as ReturnType<typeof Sql.create>
+        this.refs = this.tables.map(x => this.$.ref(x)) as ConstructorsToRefs<Tables>
+    }
+
+    join(expr: ((...args: ConstructorsToRefs<Tables>) => Fragment)|TemplateStringsArray, ...params: any[]) {
+        return this.add("JOIN", expr, ...params)
+    }
+    leftJoin(expr: ((...args: ConstructorsToRefs<Tables>) => Fragment)|TemplateStringsArray, ...params: any[]) {
+        return this.add("LEFT JOIN", expr, ...params)
+    }
+    rightJoin(expr: ((...args: ConstructorsToRefs<Tables>) => Fragment)|TemplateStringsArray, ...params: any[]) {
+        return this.add("RIGHT JOIN", expr, ...params)
+    }
+    fullJoin(expr: ((...args: ConstructorsToRefs<Tables>) => Fragment)|TemplateStringsArray, ...params: any[]) {
+        return this.add("FULL JOIN", expr, ...params)
+    }
+    crossJoin(expr: ((...args: ConstructorsToRefs<Tables>) => Fragment)|TemplateStringsArray, ...params: any[]) {
+        return this.add("CROSS JOIN", expr, ...params)
+    }
+
+    add(type:JoinType, expr: ((...args: ConstructorsToRefs<Tables>) => Fragment)|TemplateStringsArray, ...params: any[]) {
+        if (Array.isArray(expr)) {
+            this.exprs.push({ type, expr:_ => this.$(expr as TemplateStringsArray, ...params)})
+        } else if (typeof expr == 'function') {
+            this.exprs.push({ type, expr:(refs:ConstructorsToRefs<Tables>) => expr.call(this, ...refs as any) })
+        }
+        return this
+    }
+
+    as(alias:string) {
+        this.alias = alias
+        return this
+    }
+
+    build(refs:ConstructorsToRefs<Tables>) {
+        if (this.alias != null) {
+            refs[0].$ref.as = this.$.ref(refs[0].$ref.cls, this.alias)
+        }
+        const params:Record<string,any> = {}
+        const sqls:string[] = []
+        for (const join of this.exprs) {
+            const result = join.expr(refs)
+            const prefix = sqls.length ? `${alignRight(join.type, 5)}` : ''
+            sqls.push(`${prefix} ${mergeParams(params, result)}`)
+        }
+        const on = sqls.join('')
+        return { type:this.exprs[0].type, on, params }
     }
 }
 

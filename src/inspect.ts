@@ -1,12 +1,12 @@
 import { uniqueKeys } from "./utils"
 
-function alignLeft(str:string, len:number, pad:string = ' ') : string {
+export function alignLeft(str:string, len:number, pad:string = ' ') : string {
     if (len < 0) return ''
     let aLen = len + 1 - str.length
     if (aLen <= 0) return str
     return pad + str + pad.repeat(len + 1 - str.length)
 }
-function alignCenter(str:string, len:number, pad:string = ' ') : string {
+export function alignCenter(str:string, len:number, pad:string = ' ') : string {
     if (len < 0) return ''
     if (!str) str = ''
     let nLen = str.length
@@ -14,13 +14,13 @@ function alignCenter(str:string, len:number, pad:string = ' ') : string {
     let odds = Math.abs((nLen % 2) - (len % 2))
     return pad.repeat(half + 1) + str + pad.repeat(half + 1 + odds)
 }
-function alignRight(str:string, len:number, pad:string = ' ') : string {
+export function alignRight(str:string, len:number, pad:string = ' ') : string {
     if (len < 0) return ''
     let aLen = len + 1 - str.length
     if (aLen <= 0) return str
     return pad.repeat(len + 1 - str.length) + str + pad
 }
-function alignAuto(obj:any, len:number, pad:string = ' ') : string {
+export function alignAuto(obj:any, len:number, pad:string = ' ') : string {
     let str = `${obj}`
     if (str.length <= len) {
     return  typeof obj === "number"

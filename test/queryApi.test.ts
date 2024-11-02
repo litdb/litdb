@@ -2,6 +2,7 @@ import { describe, it, expect } from 'bun:test'
 import type { SqlBuilder } from '../src/types'
 import { Contact, Freight, Order } from './data'
 import { sync as db, $ } from './db'
+import { str } from './utils'
 
 describe('SelectQuery API Tests', () => {
 
@@ -40,7 +41,7 @@ describe('SelectQuery API Tests', () => {
 
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql.replaceAll('\n','')).toContain(`FROM "Contact" WHERE a = $1 AND city = $2`)
+            expect(str(sql)).toContain(`FROM "Contact" WHERE a = $1 AND city = $2`)
             expect(params).toEqual({ '1':id, '2':city })
         }
 

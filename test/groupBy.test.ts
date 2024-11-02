@@ -7,10 +7,10 @@ describe('SQLite GROUP BY Tests', () => {
 
     it ('can groupBy Contacts and Orders', () => {
 
-        const expected = 'SELECT "Contact"."firstName", SUM("Order"."total")' 
-            + '  FROM "Contact"' 
-            + '  JOIN "Order" ON "Contact"."id" = "Order"."contactId"' 
-            + ' GROUP BY "Contact"."firstName"'
+        const expected = str(`SELECT "Contact"."firstName", SUM("Order"."total") 
+             FROM "Contact" 
+             JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
+            GROUP BY "Contact"."firstName"`)
         
         const contactTotals = db
             .from(Contact)
@@ -31,10 +31,10 @@ describe('SQLite GROUP BY Tests', () => {
 
     it ('Can multiple groupBy Contacts and Orders', () => {
 
-        const expected = 'SELECT "Contact"."firstName", "Contact"."city", SUM("Order"."total")' 
-            + '  FROM "Contact"' 
-            + '  JOIN "Order" ON "Contact"."id" = "Order"."contactId"' 
-            + ' GROUP BY "Contact"."firstName", "Contact"."city"'
+        const expected = str(`SELECT "Contact"."firstName", "Contact"."city", SUM("Order"."total") 
+             FROM "Contact" 
+             JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
+            GROUP BY "Contact"."firstName", "Contact"."city"`)
         
         const q = db
             .from(Contact)
@@ -56,10 +56,10 @@ describe('SQLite GROUP BY Tests', () => {
 
     it ('Can multiple groupBy Contacts and Orders from multiple tables', () => {
 
-        const expected = 'SELECT "Contact"."firstName", "Order"."freightId", SUM("Order"."total")' 
-            + '  FROM "Contact"' 
-            + '  JOIN "Order" ON "Contact"."id" = "Order"."contactId"' 
-            + ' GROUP BY "Contact"."firstName", "Order"."freightId"'
+        const expected = str(`SELECT "Contact"."firstName", "Order"."freightId", SUM("Order"."total") 
+             FROM "Contact" 
+             JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
+            GROUP BY "Contact"."firstName", "Order"."freightId"`)
         
         const q = db
             .from(Contact)
@@ -83,10 +83,10 @@ describe('SQLite GROUP BY Tests', () => {
 
     it ('Can multiple groupBy Contacts and Orders from multiple tables using aliases', () => {
 
-        const expected = 'SELECT c."firstName", o."freightId", SUM(o."total")' 
-            + '  FROM "Contact" c' 
-            + '  JOIN "Order" o ON c."id" = o."contactId"' 
-            + ' GROUP BY c."firstName", o."freightId"'
+        const expected = str(`SELECT c."firstName", o."freightId", SUM(o."total") 
+             FROM "Contact" c 
+             JOIN "Order" o ON c."id" = o."contactId" 
+            GROUP BY c."firstName", o."freightId"`)
         
         const q = db
             .from(Contact,'c')

@@ -104,7 +104,7 @@ describe('SQLite SelectQuery Tests', () => {
     it ('Can select columns with variables', () => {
         function assert(q:SqlBuilder, sqlContains:string, expectedParams:any) {
             const { sql, params } = q.build()
-            expect(sql.replaceAll('\n','')).toContain(sqlContains)
+            expect(str(sql)).toContain(sqlContains)
             expect(params).toEqual(expectedParams)
         }
 
@@ -121,7 +121,7 @@ describe('SQLite SelectQuery Tests', () => {
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .and((o:Order) => $`${o.contactId} = ${contactId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT(\"qty\") * $3 as count  FROM \"Order\" WHERE \"freightId\" = $1 AND \"contactId\" = $2`, 
+            `SELECT COUNT(\"qty\") * $3 as count FROM \"Order\" WHERE \"freightId\" = $1 AND \"contactId\" = $2`, 
             { [1]:freightId, [2]:contactId, [3]:multiplier })
 
         assert(db.from(Order)
@@ -130,7 +130,7 @@ describe('SQLite SelectQuery Tests', () => {
             })
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT("Order"."qty") * $3 as count  FROM "Order"  JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
+            `SELECT COUNT("Order"."qty") * $3 as count FROM "Order" JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
             { [1]:contactId, [2]:freightId, [3]:multiplier })
     })
 

@@ -176,7 +176,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
 
     protected buildHaving() {
         if (this._having.length == 0) return ''
-        return `\n HAVING ${this._having.join('\n  AND ')}`
+        return `\n HAVING ${this._having.join('\n   AND ')}`
     }
 
     protected buildOrderBy() {

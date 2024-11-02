@@ -1,13 +1,14 @@
 import type { 
-    Constructor, ConstructorsToRefs, Driver, First, Fragment, JoinBuilder, JoinDefinition, 
+    Constructor, Driver, First, Fragment, JoinBuilder, JoinDefinition, 
     JoinParams, JoinType, Last, SqlBuilder, TypeRef, TypeRefs, WhereOptions 
 } from "../types"
 import { Meta, Schema } from "../connection"
-import { Sql } from "../query"
+import { Sql } from "../sql"
 import { SelectQuery } from "./select"
 import { DeleteQuery } from "./delete"
 import { UpdateQuery } from "./update"
-import { asRef, asType, leftPart, mergeParams, nextParam, toStr } from "../utils"
+import { asRef, asType, leftPart, nextParam, toStr } from "../utils"
+import { alignRight } from "../inspect"
 
 type OnJoin<
     First extends Constructor<any>, 
@@ -41,42 +42,6 @@ function joinOptions<NewTable extends Constructor<any>>(type:JoinType,
         const { sql, params } = builder.build()
         return { type, cls, on:sql, params }
     } else throw new Error(`Invalid Join Option: ${typeof options}`)
-}
-
-export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBuilder<First<Tables>> {
-    get table() { return this.tables[0] as First<Tables> }
-    tables: Tables
-    refs: ConstructorsToRefs<Tables>
-    $:ReturnType<typeof Sql.create>
-
-    params:Record<string,any> = {}
-    alias:string =''
-    buildOn?:(refs:ConstructorsToRefs<Tables>, params:Record<string,any>) => string
-
-    constructor(public driver:Driver, ...tables:Tables) {
-        this.tables = tables
-        this.$ = driver.$ as ReturnType<typeof Sql.create>
-        this.refs = this.tables.map(x => this.$.ref(x)) as ConstructorsToRefs<Tables>
-    }
-
-    on(expr: (...args: ConstructorsToRefs<Tables>) => Fragment) {
-        this.buildOn = (refs,params) => mergeParams(params, expr.call(this, ...refs as any))
-        return this
-    }
-
-    as(alias:string) {
-        this.alias = alias
-        return this
-    }
-
-    build(refs:ConstructorsToRefs<Tables>, type:JoinType) {
-        const params:Record<string,any> = {}
-        if (this.alias != null) {
-            refs[0].$ref.as = this.$.ref(refs[0].$ref.cls, this.alias)
-        }
-        const on = this.buildOn!(refs, params)
-        return { type, on, params }
-    }
 }
 
 // Helper type for determining the query class type
@@ -201,7 +166,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return instance
     }
 
-    joinBuilder<NewTable extends Constructor<any>>(builder:JoinBuilder<NewTable>, typeHint:JoinType="JOIN") 
+    protected joinBuilder<NewTable extends Constructor<any>>(builder:JoinBuilder<NewTable>, typeHint:JoinType="JOIN") 
         : This<typeof this, [...Tables, NewTable]> {
         const cls = builder.tables[0] as NewTable
         const q = this.createInstance(cls)
@@ -228,45 +193,37 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "JOIN")
             : this.addJoin<NewTable>(joinOptions<NewTable>("JOIN", asType(cls), options, asRef(cls)))
     }
-    leftJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
+    leftJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
         if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
-        return !(cls as any)?.$ref && (cls as any).tables
-            ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "LEFT JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("LEFT JOIN", asType(cls), options, asRef(cls)))
+        return this.addJoin<NewTable>(joinOptions<NewTable>("LEFT JOIN", asType(cls), options, asRef(cls)))
     }
-    rightJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
+    rightJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
         if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
-        return !(cls as any)?.$ref && (cls as any).tables
-            ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "RIGHT JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("RIGHT JOIN", asType(cls), options, asRef(cls)))
+        return this.addJoin<NewTable>(joinOptions<NewTable>("RIGHT JOIN", asType(cls), options, asRef(cls)))
     }
-    fullJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
+    fullJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
         if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
-        return !(cls as any)?.$ref && (cls as any).tables
-            ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "FULL JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("FULL JOIN", asType(cls), options, asRef(cls)))
+        return this.addJoin<NewTable>(joinOptions<NewTable>("FULL JOIN", asType(cls), options, asRef(cls)))
     }
-    crossJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
+    crossJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
         if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
-        return !(cls as any)?.$ref && (cls as any).tables
-            ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "CROSS JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("CROSS JOIN", asType(cls), options, asRef(cls)))
+        return this.addJoin<NewTable>(joinOptions<NewTable>("CROSS JOIN", asType(cls), options, asRef(cls)))
     }
 
     where(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
@@ -419,9 +376,10 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         if (this._where.length === 0) return ''
         let sb = '\n WHERE '
         for (const [i, { condition, sql }] of this._where.entries()) {
-            if (i > 0) sb += ` ${condition} `
+            if (i > 0) sb += `\n${alignRight(condition, 5)}`
             sb += sql
         }
+        // console.log(this._where)
         return sb
     }
 
@@ -452,4 +410,3 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return { sql, params: this.params }
     }
 }
-

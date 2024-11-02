@@ -6,7 +6,7 @@ import type {
 import { DeleteQuery } from "./builders/delete"
 import { SelectQuery } from "./builders/select"
 import { UpdateQuery } from "./builders/update"
-import { Sql } from "./query"
+import { Sql } from "./sql"
 import { asRef, asType, propsWithValues } from "./utils"
 
 export class Meta {
