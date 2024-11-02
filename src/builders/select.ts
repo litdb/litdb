@@ -1,5 +1,5 @@
 import { Schema } from "../connection"
-import type { Constructor, Fragment, GroupByBuilder, HavingBuilder, TypeRefs } from "../types"
+import type { Constructor, Fragment, GroupByBuilder, HavingBuilder, OrderByBuilder, TypeRefs } from "../types"
 import { WhereQuery } from "./where"
 
 type SelectOptions = {
@@ -13,6 +13,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     protected _select:string[] = []
     protected _groupBy:string[] = []
     protected _having:string[] = []
+    protected _orderBy:string[] = []
     protected _skip:number | undefined
     protected _take:number | undefined
     protected _into: Constructor<any>|undefined
@@ -62,6 +63,24 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (typeof options == 'function') {
             const frag = Schema.assertSql(options.call(this, ...this.refs))
             this._having.push(this.mergeParams(frag))
+        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        return this
+    }
+
+    orderBy(options:TemplateStringsArray|Fragment|OrderByBuilder|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+        if (!options && params.length == 0) {
+            this._orderBy.length = 0
+        } else if (Array.isArray(options)) {
+            const frag = this.$(options as TemplateStringsArray, ...params)
+            this._orderBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'object') {
+            const frag = typeof (options as any).build == 'function' 
+                ? (options as any).build(this.refs)
+                : Schema.assertSql(options)
+            this._orderBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'function') {
+            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            this._orderBy.push(this.mergeParams(frag))
         } else throw new Error(`Invalid Argument: ${typeof options}`)
         return this
     }
@@ -155,13 +174,24 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return `\n HAVING ${this._having.join('\n  AND ')}`
     }
 
+    protected buildOrderBy() {
+        if (this._orderBy.length == 0) return ''
+        return `\n ORDER BY ${this._orderBy.join(', ')}`
+    }
+
     protected buildLimit() {
         const sql = this.driver.sqlLimit(this._skip, this._take)
         return sql
     }
 
     build() {
-        let sql = this.buildSelect() + this.buildFrom() + this.buildJoins() + this.buildWhere() + this.buildGroupBy() + this.buildHaving()
+        let sql = this.buildSelect() 
+            + this.buildFrom() 
+            + this.buildJoins() 
+            + this.buildWhere() 
+            + this.buildGroupBy() 
+            + this.buildHaving()
+            + this.buildOrderBy()
         // console.log(`\n${sql}\n`)
         return { 
             sql,

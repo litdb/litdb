@@ -3,7 +3,7 @@ import { Contact, Order } from './data'
 import { $, sync as db } from './db'
 import { str } from './utils'
 
-describe.only('SQLite HAVING Tests', () => {
+describe('SQLite HAVING Tests', () => {
 
     it ('Can use HAVING on Contacts', () => {
         expect(str(db.from(Contact)
