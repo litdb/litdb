@@ -3,7 +3,7 @@ import { Contact, Order } from './data'
 import { $, sync as db } from './db'
 import { str } from './utils'
 
-describe('SQLite GROUP By Tests', () => {
+describe('SQLite GROUP BY Tests', () => {
 
     it ('can groupBy Contacts and Orders', () => {
 

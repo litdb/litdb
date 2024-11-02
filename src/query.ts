@@ -95,6 +95,7 @@ export class SqlBuilderBase<Tables extends Constructor<any>[]> {
     tables:Tables
     params:Record<string,any> = {}
     exprs:((refs:ConstructorsToRefs<Tables>) => Fragment)[]=[]
+    delimiter = ', '
 
     constructor(public driver:Driver, ...tables:Tables) {
         this.$ = driver.$ as ReturnType<typeof Sql.create>
@@ -117,11 +118,16 @@ export class SqlBuilderBase<Tables extends Constructor<any>[]> {
             const result = expr(refs)
             sqls.push(mergeParams(params, result))
         }
-        const sql = sqls.join(', ')
+        const sql = sqls.join(this.delimiter)
         return { sql, params }
     }
 }
 
 export class SqlGroupByBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements GroupByBuilder {}
-export class SqlHavingBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements HavingBuilder {}
 export class SqlOrderByBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements OrderByBuilder {}
+export class SqlHavingBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements HavingBuilder {
+    constructor(public driver:Driver, ...tables:Tables) {
+        super(driver, ...tables)
+        this.delimiter = '\n  AND '
+    }
+}

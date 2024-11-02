@@ -134,11 +134,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         }) as { [K in keyof T]: TypeRef<InstanceType<T[K]>> }
     }
 
-    prevJoin() : TypeRef<InstanceType<Constructor<any>>> {
-        return this.refs[this.refs.length - 1]
-    }
-
-    private createInstance<NewTable extends Constructor<any>>(
+    protected createInstance<NewTable extends Constructor<any>>(
         table: NewTable, ref?:TypeRef<InstanceType<NewTable>>
     ) : This<typeof this, [...Tables, NewTable]> {
         const meta = Schema.assertMeta(table)
@@ -170,7 +166,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return instance
     }
 
-    addJoin<NewTable extends Constructor<any>>(options:{ 
+    protected addJoin<NewTable extends Constructor<any>>(options:{ 
         type:JoinType, 
         cls:NewTable
         ref?:TypeRef<InstanceType<NewTable>>
@@ -419,7 +415,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         } else throw new Error(`Unsupported ${condition} value: ${values}`)
     }
 
-    buildWhere() {
+    protected buildWhere() {
         if (this._where.length === 0) return ''
         let sb = '\n WHERE '
         for (const [i, { condition, sql }] of this._where.entries()) {
@@ -429,7 +425,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return sb
     }
 
-    buildJoins() {
+    protected buildJoins() {
         if (this._joins.length == 0) return ''
         let sql = ''
         for (let i = 0; i<this._joins.length; i++) {

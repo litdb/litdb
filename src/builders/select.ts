@@ -1,5 +1,5 @@
 import { Schema } from "../connection"
-import type { Constructor, Fragment, GroupByBuilder, TypeRefs } from "../types"
+import type { Constructor, Fragment, GroupByBuilder, HavingBuilder, TypeRefs } from "../types"
 import { WhereQuery } from "./where"
 
 type SelectOptions = {
@@ -48,14 +48,16 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return this
     }
 
-    having(options:TemplateStringsArray|Fragment|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+    having(options:TemplateStringsArray|Fragment|HavingBuilder|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
         if (!options && params.length == 0) {
             this._having.length = 0
         } else if (Array.isArray(options)) {
             const frag = this.$(options as TemplateStringsArray, ...params)
             this._having.push(this.mergeParams(frag))
         } else if (typeof options == 'object') {
-            const frag = Schema.assertSql(options)
+            const frag = typeof (options as any).build == 'function' 
+                ? (options as any).build(this.refs)
+                : Schema.assertSql(options)
             this._having.push(this.mergeParams(frag))
         } else if (typeof options == 'function') {
             const frag = Schema.assertSql(options.call(this, ...this.refs))
@@ -124,7 +126,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return this
     }
 
-    buildSelect() {
+    protected buildSelect() {
         //console.log('buildSelect', this._select)
         const sqlSelect = this._select.length > 0 
             ? this._select.join(', ') 
@@ -133,7 +135,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return sql
     }
 
-    buildFrom() {
+    protected buildFrom() {
         const quotedTable = this.quoteTable(this.meta.tableName)
         let sql = `\n  FROM ${quotedTable}`
         const alias = this.refs[0].$ref.as
@@ -143,17 +145,17 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return sql
     }
 
-    buildGroupBy() {
+    protected buildGroupBy() {
         if (this._groupBy.length == 0) return ''
         return `\n GROUP BY ${this._groupBy.join(', ')}`
     }
 
-    buildHaving() {
+    protected buildHaving() {
         if (this._having.length == 0) return ''
-        return `\n HAVING ${this._having.join(', ')}`
+        return `\n HAVING ${this._having.join('\n  AND ')}`
     }
 
-    buildLimit() {
+    protected buildLimit() {
         const sql = this.driver.sqlLimit(this._skip, this._take)
         return sql
     }
