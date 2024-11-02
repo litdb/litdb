@@ -27,6 +27,12 @@ describe('SQLite HAVING Tests', () => {
         expect(str(db.from(Contact)
             .join(Order, { on:(c,o) => $`${c.id} = ${o.contactId}` })
             .groupBy(c => $`${c.city}`)
+            .having((c,o) => $`COUNT(${c.id}) > 5  AND SUM(${o.total}) < 1000`)
+        )).toContain(expected)
+
+        expect(str(db.from(Contact)
+            .join(Order, { on:(c,o) => $`${c.id} = ${o.contactId}` })
+            .groupBy(c => $`${c.city}`)
             .having(c => $`COUNT(${c.id}) > 5`)
             .having((_,o) => $`SUM(${o.total}) < 1000`)
         )).toContain(expected)

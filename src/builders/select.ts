@@ -16,6 +16,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     protected _orderBy:string[] = []
     protected _skip:number | undefined
     protected _take:number | undefined
+    protected _limit?:string
     protected _into: Constructor<any>|undefined
 
     copyInto(instance:SelectQuery<any>) {
@@ -127,16 +128,20 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     get hasSelect() { return this._select.length > 0 }
 
     skip(rows?:number) {
-        this._skip = rows == null ? undefined : rows
-        return this
+        return this.limit(this._take, rows)
     }
     take(rows?:number) {
-        this._take = rows == null ? undefined : rows
-        return this
+        return this.limit(rows, this._skip)
     }
-    limit(skip?:number, take?:number) {
-        this._skip = skip == null ? undefined : skip
+    limit(take?:number, skip?:number) {
         this._take = take == null ? undefined : take
+        this._skip = skip == null ? undefined : skip
+        if (take == null && skip == null) {
+            this._limit = undefined
+        } else {
+            const frag = this.driver.sqlLimit(this._skip, this._take) 
+            this._limit = this.mergeParams(frag)
+        }
         return this
     }
 
@@ -180,8 +185,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     }
 
     protected buildLimit() {
-        const sql = this.driver.sqlLimit(this._skip, this._take)
-        return sql
+        return this._limit ? `\n ${this._limit}` : ''
     }
 
     build() {
@@ -192,6 +196,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             + this.buildGroupBy() 
             + this.buildHaving()
             + this.buildOrderBy()
+            + this.buildLimit()
         // console.log(`\n${sql}\n`)
         return { 
             sql,

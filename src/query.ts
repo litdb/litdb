@@ -72,6 +72,9 @@ export class Sql
         $.refs = function refs<T extends readonly Constructor[]>(...classes: [...T]): ConstructorToTypeRef<T> {
             return classes.map(cls => $.ref(cls)) as ConstructorToTypeRef<T>
         }
+        $.fragment = function(sql:string, params:Record<string,any>): Fragment {
+            return ({ sql, params })
+        }
         $.join = function<Tables extends Constructor<any>[]>(...tables:Tables) {
             return new SqlJoinBuilder<Tables>(driver, ...tables)
         }

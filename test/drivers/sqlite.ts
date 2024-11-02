@@ -3,6 +3,7 @@ import type { ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, T
 import { 
     Sql, Connection, NamingStrategy, SyncConnection, DataType, DefaultValues, converterFor, DateTimeConverter
 } from "../../src"
+import { Fragment } from "../../src/types"
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
 
@@ -220,12 +221,13 @@ class SqliteDriver implements Driver
         return sb
     }
 
-    sqlLimit(skip?: number, take?: number): string {
-        return skip == null && take == null
-            ? '' 
-            : skip
-                ? `LIMIT ${take} OFFSET ${skip}`
-                : `LIMIT ${take}`
+    sqlLimit(offset?: number, limit?: number): Fragment {
+        if (offset == null && limit == null)
+            throw new Error(`Invalid argument sqlLimit(${offset}, ${limit})`)
+        const frag = offset
+            ? this.$.fragment(`LIMIT $limit OFFSET $offset`, { offset, limit:limit ?? -1 })
+            : this.$.fragment(`LIMIT $limit`, { limit })
+        return frag
     }
 
     prepareRaw<ReturnType, ParamsType extends DbBinding | DbBinding[]>(sql: string) 

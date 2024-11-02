@@ -152,7 +152,7 @@ export interface Driver
 
     sqlTableNames(schema?: string): string
 
-    sqlLimit(skip?: number, take?: number): string
+    sqlLimit(skip?: number, take?: number): Fragment
 
     prepareRaw<ReturnType, ParamsType extends DbBinding[]>(sql:String) 
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
