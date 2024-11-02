@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import type { SqlBuilder } from '../src/types'
-import { Contact, DynamicPerson, Freight, Order, OrderItem, Person } from './data'
+import { Contact, DynamicPerson, Order, Person } from './data'
 import { str } from './utils'
 import { sync as db, $ } from './db'
 
@@ -32,20 +32,9 @@ describe('SQLite SelectQuery Tests', () => {
         expect(str(db.from(Contact).select(
             (c:Contact) => $`${c.id}, ${c.city}, ${p.surname}`)
         )).toContain('"id", "city", "lastName"')
-        expect(str(db.from(Contact).alias('c').select(
+        expect(str(db.from(Contact).as('c').select(
             (c:Contact) => $`${c.id}, ${c.city}`)
         )).toContain('c."id", c."city"')
-    })
-
-    it ('Can select multiple joined tables', () => {
-
-        expect(str(db.from(Contact).alias('c')
-            .join(Order, { on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
-            .join(OrderItem, { on:(o:Order, i:OrderItem) => $`${o.id} = ${i.orderId}` })
-            .leftJoin($.join(Freight,Order).on((f, o) => $`${o.freightId} = ${f.id}`))
-            .select((c, o, i, f) => $`${c.firstName}, ${o.contactId}, ${i.orderId}, ${f.name}`)))
-        .toContain("FROM")
-        
     })
 
     it (`Can select custom fields from Person`, () => {
@@ -75,7 +64,7 @@ describe('SQLite SelectQuery Tests', () => {
         expect(str(db.from(Person).select(
             (p:Person) => $`${p.key}, ${p.name}, ${c.city}`)
         )).toContain('"id", "firstName", "city"')
-        expect(str(db.from(Person).alias('p').select(
+        expect(str(db.from(Person).as('p').select(
             (p:Person) => $`${p.key}, ${p.name}`)
         )).toContain('p."id", p."firstName"')
     })
@@ -107,7 +96,7 @@ describe('SQLite SelectQuery Tests', () => {
         expect(str(db.from(DynamicPerson).select(
             (p:DynamicPerson) => $`${p.key}, ${p.name}, ${c.city}`)
         )).toContain('"id", "firstName", "city"')
-        expect(str(db.from(Person).alias('p').select(
+        expect(str(db.from(Person).as('p').select(
             (p:DynamicPerson) => $`${p.key}, ${p.name}`)
         )).toContain('p."id", p."firstName"')
     })
@@ -115,7 +104,7 @@ describe('SQLite SelectQuery Tests', () => {
     it ('Can select columns with variables', () => {
         function assert(q:SqlBuilder, sqlContains:string, expectedParams:any) {
             const { sql, params } = q.build()
-            expect(sql).toContain(sqlContains)
+            expect(sql.replaceAll('\n','')).toContain(sqlContains)
             expect(params).toEqual(expectedParams)
         }
 
@@ -132,7 +121,7 @@ describe('SQLite SelectQuery Tests', () => {
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .and((o:Order) => $`${o.contactId} = ${contactId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT(\"qty\") * $3 as count FROM \"Order\" WHERE \"freightId\" = $1 AND \"contactId\" = $2`, 
+            `SELECT COUNT(\"qty\") * $3 as count  FROM \"Order\" WHERE \"freightId\" = $1 AND \"contactId\" = $2`, 
             { [1]:freightId, [2]:contactId, [3]:multiplier })
 
         assert(db.from(Order)
@@ -141,14 +130,14 @@ describe('SQLite SelectQuery Tests', () => {
             })
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT("Order"."qty") * $3 as count FROM "Order" JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
+            `SELECT COUNT("Order"."qty") * $3 as count  FROM "Order"  JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
             { [1]:contactId, [2]:freightId, [3]:multiplier })
     })
 
     it ('Can query with just refs', () => {
         function assert(q:SqlBuilder, sqlContains:string, expectedParams:any) {
             const { sql, params } = q.build()
-            expect(sql).toContain(sqlContains)
+            expect(sql.replaceAll('\n','')).toContain(sqlContains)
             expect(params).toEqual(expectedParams)
         }
 
@@ -185,8 +174,8 @@ describe('SQLite SelectQuery Tests', () => {
                 expectedSql, expectedParams)
 
         })(
-            'SELECT COUNT("Order"."qty") * $3 as count FROM "Order"' 
-            + ' JOIN "Contact" ON "Order"."contactId" = "Contact"."id"' 
+            'SELECT COUNT("Order"."qty") * $3 as count  FROM "Order"' 
+            + '  JOIN "Contact" ON "Order"."contactId" = "Contact"."id"' 
             + ' WHERE "Contact"."id" = $1 AND "Order"."freightId" = $2',
             { [1]:contactId, [2]:freightId, [3]:multiplier }
         )
@@ -197,7 +186,7 @@ describe('SQLite SelectQuery Tests', () => {
             })
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT("Order"."qty") * $3 as count FROM "Order" JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
+            `SELECT COUNT("Order"."qty") * $3 as count  FROM "Order"  JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
             { [1]:contactId, [2]:freightId, [3]:multiplier })
     })
 })

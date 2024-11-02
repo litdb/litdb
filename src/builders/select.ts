@@ -1,5 +1,5 @@
 import { Schema } from "../connection"
-import type { Constructor, Fragment, TypeRefs } from "../types"
+import type { Constructor, Fragment, GroupByBuilder, TypeRefs } from "../types"
 import { WhereQuery } from "./where"
 
 type SelectOptions = {
@@ -11,8 +11,58 @@ type SelectOptions = {
 export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
 
     protected _select:string[] = []
+    protected _groupBy:string[] = []
+    protected _having:string[] = []
     protected _skip:number | undefined
     protected _take:number | undefined
+    protected _into: Constructor<any>|undefined
+
+    copyInto(instance:SelectQuery<any>) {
+        super.copyInto(instance)
+        instance._select = Array.from(this._select)
+        instance._groupBy = Array.from(this._groupBy)
+        instance._having = Array.from(this._having)
+        instance._skip = this._skip
+        instance._take = this._take
+        instance._into = this._into
+        return instance
+    }
+
+    clone(): SelectQuery<Tables> { return super.clone() as SelectQuery<Tables> }
+
+    groupBy(options:TemplateStringsArray|Fragment|GroupByBuilder|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+        if (!options && params.length == 0) {
+            this._groupBy.length = 0
+        } else if (Array.isArray(options)) {
+            const frag = this.$(options as TemplateStringsArray, ...params)
+            this._groupBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'object') {
+            const frag = typeof (options as any).build == 'function' 
+                ? (options as any).build(this.refs)
+                : Schema.assertSql(options)
+            this._groupBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'function') {
+            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            this._groupBy.push(this.mergeParams(frag))
+        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        return this
+    }
+
+    having(options:TemplateStringsArray|Fragment|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+        if (!options && params.length == 0) {
+            this._having.length = 0
+        } else if (Array.isArray(options)) {
+            const frag = this.$(options as TemplateStringsArray, ...params)
+            this._having.push(this.mergeParams(frag))
+        } else if (typeof options == 'object') {
+            const frag = Schema.assertSql(options)
+            this._having.push(this.mergeParams(frag))
+        } else if (typeof options == 'function') {
+            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            this._having.push(this.mergeParams(frag))
+        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        return this
+    }
 
     select(options:SelectOptions|TemplateStringsArray|string|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) {
         if (!options && params.length === 0) {
@@ -69,6 +119,11 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return this
     }
 
+    into<T extends Constructor<any>>(cls:T) {
+        this._into = cls
+        return this
+    }
+
     buildSelect() {
         //console.log('buildSelect', this._select)
         const sqlSelect = this._select.length > 0 
@@ -80,7 +135,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
 
     buildFrom() {
         const quotedTable = this.quoteTable(this.meta.tableName)
-        let sql = `FROM ${quotedTable}`
+        let sql = `\n  FROM ${quotedTable}`
         const alias = this.refs[0].$ref.as
         if (alias && alias != quotedTable) {
             sql += ` ${alias}`
@@ -89,11 +144,13 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     }
 
     buildGroupBy() {
-        return ''
+        if (this._groupBy.length == 0) return ''
+        return `\n GROUP BY ${this._groupBy.join(', ')}`
     }
 
     buildHaving() {
-        return ''
+        if (this._having.length == 0) return ''
+        return `\n HAVING ${this._having.join(', ')}`
     }
 
     buildLimit() {
@@ -102,7 +159,12 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     }
 
     build() {
-        const sql = `${this.buildSelect()} ${this.buildFrom()}${this.buildJoins()}${this.buildWhere()}${this.buildGroupBy()}${this.buildHaving()}`
-        return { sql, params:this.params }
+        let sql = this.buildSelect() + this.buildFrom() + this.buildJoins() + this.buildWhere() + this.buildGroupBy() + this.buildHaving()
+        // console.log(`\n${sql}\n`)
+        return { 
+            sql,
+            params: this.params, 
+            into: this._into ?? (this._select.length == 0 ? this.tables[0] : undefined) 
+        }
     }
 }

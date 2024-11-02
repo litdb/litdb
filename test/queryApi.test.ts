@@ -40,7 +40,7 @@ describe('SelectQuery API Tests', () => {
 
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql).toContain(`FROM "Contact" WHERE a = $1 AND city = $2`)
+            expect(sql.replaceAll('\n','')).toContain(`FROM "Contact" WHERE a = $1 AND city = $2`)
             expect(params).toEqual({ '1':id, '2':city })
         }
 

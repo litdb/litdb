@@ -4,7 +4,7 @@ import { Contact, DynamicPerson, Person } from './data'
 import { selectContact, selectPerson, str } from './utils'
 import { sync as db, $ } from './db'
 
-describe.only('SQLite WHERE Tests', () => {
+describe('SQLite WHERE Tests', () => {
 
     it ('Can query recommended shorthands', () => {
         const search = {            
@@ -138,7 +138,7 @@ describe.only('SQLite WHERE Tests', () => {
         const id = 1
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql).toBe(`SELECT ${selectContact} FROM "Contact" WHERE "id" = $id`)
+            expect(sql.replaceAll('\n','')).toBe(`SELECT ${selectContact}  FROM "Contact" WHERE "id" = $id`)
             expect(params.id).toBe(id)
         }
 
@@ -156,7 +156,7 @@ describe.only('SQLite WHERE Tests', () => {
         const key = 1
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql).toBe(`SELECT ${selectPerson} FROM "Contact" WHERE "id" = $key`)
+            expect(sql.replaceAll('\n','')).toBe(`SELECT ${selectPerson}  FROM "Contact" WHERE "id" = $key`)
             expect(params.key).toBe(key)
         }
 
@@ -170,7 +170,7 @@ describe.only('SQLite WHERE Tests', () => {
         assert(db.from(Person).where({ sql: { sql:'"id" = $key', params:{ key } } }))
 
         expect(str(db.from(Person).where((p:Person) => $`${p.key} = ${key}`)))
-            .toBe(`SELECT ${selectPerson} FROM "Contact" WHERE "id" = $1`)
+            .toBe(`SELECT ${selectPerson}  FROM "Contact" WHERE "id" = $1`)
         // const p = sql.ref(Person,'p')
         // db.from(Person).where`${p.key} = ${key}`
     })
@@ -179,7 +179,7 @@ describe.only('SQLite WHERE Tests', () => {
         const key = 1
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql).toBe(`SELECT ${selectPerson} FROM "Contact" WHERE "id" = $key`)
+            expect(sql.replaceAll('\n','')).toBe(`SELECT ${selectPerson}  FROM "Contact" WHERE "id" = $key`)
             expect(params.key).toBe(key)
         }
 
@@ -199,7 +199,7 @@ describe.only('SQLite WHERE Tests', () => {
 
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql).toBe(`SELECT ${selectContact} FROM "Contact" WHERE "id" = $id AND "city" = $city`)
+            expect(sql.replaceAll('\n','')).toBe(`SELECT ${selectContact}  FROM "Contact" WHERE "id" = $id AND "city" = $city`)
             expect(params.id).toBe(id)
         }
 
@@ -221,7 +221,7 @@ describe.only('SQLite WHERE Tests', () => {
 
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql).toBe(`SELECT ${selectPerson} FROM "Contact" WHERE "id" = $key AND "firstName" = $name`)
+            expect(sql.replaceAll('\n','')).toBe(`SELECT ${selectPerson}  FROM "Contact" WHERE "id" = $key AND "firstName" = $name`)
             expect(params.key).toBe(key)
         }
 
@@ -240,7 +240,7 @@ describe.only('SQLite WHERE Tests', () => {
         const id = 1
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(sql).toBe(`SELECT ${selectContact} FROM "Contact" WHERE "id" = $1`)
+            expect(sql).toBe(`SELECT ${selectContact}\n  FROM "Contact"\n WHERE "id" = $1`)
             expect(params['1']).toBe(id)
         }
 

@@ -164,9 +164,8 @@ export interface Driver
 export type Fragment = { sql:string, params?:Record<string,any> }
 
 export interface SqlBuilder {
-    build(): { sql:string, params:Record<string,any> }
+    build(): { sql:string, params:Record<string,any>, into?:Constructor<any> }
 }
-
 
 export type WhereOptions = { 
     equals?:     Record<string,ScalarValue>
@@ -184,6 +183,10 @@ export type WhereOptions = {
     sql?:        Fragment|Fragment[] 
     rawSql?:     string|string[]
     params?:     Record<string,any>
+}
+
+export type GroupByOptions = {
+
 }
 
 export type TypeRef<T> = T & { $ref: { cls:Constructor<T>, as?:string } }
@@ -208,9 +211,7 @@ export type JoinParams = {
 
 export type JoinDefinition = { 
     type:JoinType
-    table:string
     on?:string 
-    as?:string
     params?:Record<string,any> 
 }
 
@@ -218,4 +219,16 @@ export interface JoinBuilder<Table extends Constructor<any>> {
     get table(): Table
     get tables(): Constructor<any>[]
     build(refs:ConstructorsToRefs<any>, type:JoinType) : JoinDefinition
+}
+
+export interface GroupByBuilder {
+    build(refs:ConstructorsToRefs<any>) : Fragment
+}
+
+export interface HavingBuilder {
+    build(refs:ConstructorsToRefs<any>) : Fragment
+}
+
+export interface OrderByBuilder {
+    build(refs:ConstructorsToRefs<any>) : Fragment
 }

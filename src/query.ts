@@ -1,6 +1,10 @@
-import type { Constructor, ConstructorToTypeRef, Driver, Fragment, TypeRef } from "./types"
+import type { 
+    Constructor, ConstructorsToRefs, ConstructorToTypeRef, Driver, Fragment, 
+    GroupByBuilder, HavingBuilder, OrderByBuilder, TypeRef 
+} from "./types"
 import { Meta, Schema } from "./connection"
 import { SqlJoinBuilder } from "./builders/where"
+import { mergeParams } from "./utils"
 
 export class Sql
 {
@@ -68,10 +72,56 @@ export class Sql
         $.refs = function refs<T extends readonly Constructor[]>(...classes: [...T]): ConstructorToTypeRef<T> {
             return classes.map(cls => $.ref(cls)) as ConstructorToTypeRef<T>
         }
-        $.join = function<JoinTables extends Constructor<any>[]>(...joinTables:JoinTables) {
-            return new SqlJoinBuilder<JoinTables>(driver, ...joinTables)
+        $.join = function<Tables extends Constructor<any>[]>(...tables:Tables) {
+            return new SqlJoinBuilder<Tables>(driver, ...tables)
+        }
+        $.groupBy = function<Tables extends Constructor<any>[]>(...tables:Tables) {
+            return new SqlGroupByBuilder<Tables>(driver, ...tables)
+        }
+        $.having = function<Tables extends Constructor<any>[]>(...tables:Tables) {
+            return new SqlHavingBuilder<Tables>(driver, ...tables)
+        }
+        $.orderBy = function<Tables extends Constructor<any>[]>(...tables:Tables) {
+            return new SqlOrderByBuilder<Tables>(driver, ...tables)
         }
     
         return $
     }
 }
+
+export class SqlBuilderBase<Tables extends Constructor<any>[]> {
+    $:ReturnType<typeof Sql.create>
+
+    tables:Tables
+    params:Record<string,any> = {}
+    exprs:((refs:ConstructorsToRefs<Tables>) => Fragment)[]=[]
+
+    constructor(public driver:Driver, ...tables:Tables) {
+        this.$ = driver.$ as ReturnType<typeof Sql.create>
+        this.tables = tables
+    }
+
+    add(expr: ((...args: ConstructorsToRefs<Tables>) => Fragment)|TemplateStringsArray, ...params: any[]) {
+        if (Array.isArray(expr)) {
+            this.exprs.push(_ => this.$(expr as TemplateStringsArray, ...params))
+        } else if (typeof expr == 'function') {
+            this.exprs.push((refs:ConstructorsToRefs<Tables>) => expr.call(this, ...refs as any))
+        }
+        return this
+    }
+
+    build(refs:ConstructorsToRefs<Tables>) {
+        const params:Record<string,any> = {}
+        const sqls:string[] = []
+        for (const expr of this.exprs) {
+            const result = expr(refs)
+            sqls.push(mergeParams(params, result))
+        }
+        const sql = sqls.join(', ')
+        return { sql, params }
+    }
+}
+
+export class SqlGroupByBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements GroupByBuilder {}
+export class SqlHavingBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements HavingBuilder {}
+export class SqlOrderByBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements OrderByBuilder {}

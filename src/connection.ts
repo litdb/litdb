@@ -1,12 +1,13 @@
 import type { 
     Driver, DbBinding, ReflectMeta, ClassParam, ClassInstance, TableDefinition, 
-    Fragment, SqlBuilder, Statement, Constructor 
+    Fragment, SqlBuilder, Statement, Constructor, 
+    TypeRef
 } from "./types"
 import { DeleteQuery } from "./builders/delete"
 import { SelectQuery } from "./builders/select"
 import { UpdateQuery } from "./builders/update"
 import { Sql } from "./query"
-import { propsWithValues } from "./utils"
+import { asRef, asType, propsWithValues } from "./utils"
 
 export class Meta {
     constructor(public cls:ReflectMeta) {
@@ -230,8 +231,11 @@ export class ConnectionBase {
         this.$ = driver.$ as ReturnType<typeof Sql.create>
     }
     quote(symbol:string) { return this.driver.quote(symbol) }
-    from<Table extends Constructor<any>>(table:Table) { 
-        return new SelectQuery(this.driver, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 
+    from<Table extends Constructor<any>>(table:Table | TypeRef<InstanceType<Table>>, alias?:string) {
+        
+        const cls = asType(table)
+        const ref = asRef(table) ?? this.$.ref(table, alias ?? '')
+        return new SelectQuery(this.driver, [cls], [Schema.assertMeta(cls)], [ref]) 
     }
     updateFor<Table extends Constructor<any>>(table:Table) { 
         return new UpdateQuery(this.driver, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 

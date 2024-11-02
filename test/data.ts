@@ -43,6 +43,8 @@ export class Contact {
 
 @table()
 export class Order {
+    constructor(data?: Partial<Order>) { Object.assign(this, data) }
+
     @column("INTEGER", { autoIncrement:true })
     id: number = 0
 

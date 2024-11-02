@@ -7,7 +7,7 @@ import { Sql } from "../query"
 import { SelectQuery } from "./select"
 import { DeleteQuery } from "./delete"
 import { UpdateQuery } from "./update"
-import { toStr } from "../utils"
+import { asRef, asType, leftPart, mergeParams, nextParam, toStr } from "../utils"
 
 type OnJoin<
     First extends Constructor<any>, 
@@ -19,45 +19,28 @@ type OnJoin<
 
 function joinOptions<NewTable extends Constructor<any>>(type:JoinType, 
     cls:NewTable,
-    options?:JoinParams|SqlBuilder) : { 
+    options?:JoinParams|SqlBuilder|Fragment,
+    ref?:TypeRef<InstanceType<NewTable>>) : { 
         type:JoinType, 
-        cls:NewTable
+        cls:NewTable|TypeRef<InstanceType<NewTable>>
+        ref?:TypeRef<InstanceType<NewTable>>
         on?:string | ((...params:any[]) => Fragment),
         as?:string
         params?:Record<string,any>
     } {
     if (typeof options == 'object') {
-        options = options as JoinParams
-        return { type, cls, on:options?.on, as:options?.as, params:options?.params }
+        if ((options as any)?.sql) {
+            const { sql, params } = options as Fragment
+            return { type, cls, ref, on:sql, params }
+        } else {
+            options = options as JoinParams
+            return { type, cls, ref, as:options?.as, on:options?.on, params:options?.params }
+        }
     } else if (typeof options == 'function') {
         const builder = options as SqlBuilder
         const { sql, params } = builder.build()
         return { type, cls, on:sql, params }
     } else throw new Error(`Invalid Join Option: ${typeof options}`)
-}
-
-function nextParam(params:Record<string,any>) {
-    const positionalParams = Object.keys(params).map(x => parseInt(x)).filter(x => !isNaN(x))
-    return positionalParams.length == 0
-        ? 1
-        : Math.max(...positionalParams) + 1
-}
-
-function mergeParams(params:Record<string,any>, f:Fragment) {
-    let sql = f.sql
-    if (f.params && typeof f.params == 'object') {
-        for (const [key, value] of Object.entries(f.params)) {
-            const exists = key in params && !isNaN(parseInt(key))
-            if (exists) {
-                const nextvalue = nextParam(params)
-                sql = sql.replaceAll(`$${key}`,`$${nextvalue}`)
-                params[nextvalue] = value
-            } else {
-                params[key] = value
-            }
-        }
-    }
-    return sql
 }
 
 export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBuilder<First<Tables>> {
@@ -92,7 +75,7 @@ export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBu
             refs[0].$ref.as = this.$.ref(refs[0].$ref.cls, this.alias)
         }
         const on = this.buildOn!(refs, params)
-        return { type, table:this.tables[0].name, as:refs[0].$ref.as, on, params }
+        return { type, on, params }
     }
 }
 
@@ -110,7 +93,7 @@ type This<T, NewTables extends Constructor<any>[]> =
     QueryType<T> extends DeleteQuery<any> ? DeleteQuery<NewTables> :
     WhereQuery<NewTables>
 
-export class WhereQuery<Tables extends Constructor<any>[]> {
+export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder {
   
     constructor(
         public driver:Driver, 
@@ -155,11 +138,11 @@ export class WhereQuery<Tables extends Constructor<any>[]> {
         return this.refs[this.refs.length - 1]
     }
 
-    createInstance<NewTable extends Constructor<any>>(
-        table: NewTable
+    private createInstance<NewTable extends Constructor<any>>(
+        table: NewTable, ref?:TypeRef<InstanceType<NewTable>>
     ) : This<typeof this, [...Tables, NewTable]> {
-        const meta = {} as Meta
-        const ref = this.$.ref(table)
+        const meta = Schema.assertMeta(table)
+        ref = ref ?? this.$.ref(table)
         
         return new (this.constructor as any)(
             this.driver,
@@ -176,15 +159,28 @@ export class WhereQuery<Tables extends Constructor<any>[]> {
         return instance
     }
 
-    addJoin<NewTable extends Constructor<any>>(join:{ 
+    clone() : WhereQuery<Tables> {
+        const instance = new (this.constructor as any)(
+            this.driver,
+            [...this.tables],
+            [...this.metas],
+            [...this.refs]
+        )
+        this.copyInto(instance)
+        return instance
+    }
+
+    addJoin<NewTable extends Constructor<any>>(options:{ 
         type:JoinType, 
         cls:NewTable
+        ref?:TypeRef<InstanceType<NewTable>>
         on?:string | ((...params:any[]) => Fragment),
         as?:string
         params?:Record<string,any>
-    }) {
-        const table = join.cls as NewTable
-        const instance = this.createInstance(table)
+    }) : This<typeof this, [...Tables, NewTable]> {
+        const table = options.cls as NewTable
+        const ref = options?.ref ?? (options.as ? this.$.ref(table, options.as) : undefined)
+        const instance = this.createInstance(table, ref)
         this.copyInto(instance as any)
 
         let q = instance as WhereQuery<any>
@@ -196,79 +192,85 @@ export class WhereQuery<Tables extends Constructor<any>[]> {
 
         let on = ''
         const qProtected = q as any
-        if (typeof join.on == 'string') {
-            on = join.params
-                ? qProtected.mergeParams({ sql:join.on, params:join.params })
-                : join.on
-        } else if (typeof join.on == 'function') {
+        if (typeof options.on == 'string') {
+            on = options.params
+                ? qProtected.mergeParams({ sql:options.on, params:options.params })
+                : options.on
+        } else if (typeof options.on == 'function') {
             const refs = q.refs.slice(-2).concat([q.ref])
-            const sql = Schema.assertSql(join.on.call(q, ...refs))
+            const sql = Schema.assertSql(options.on.call(q, ...refs))
             on = qProtected.mergeParams(sql)
         }
-        qProtected._joins.push({ type:join.type, table:Schema.assertMeta(table).tableName, on, params:join.params })
+        qProtected._joins.push({ type:options.type, table, on, params:options.params })
         return instance
     }
 
-    joinBuilder<NewTable extends Constructor<any>>(builder:JoinBuilder<NewTable>, typeHint:JoinType="JOIN") {
+    joinBuilder<NewTable extends Constructor<any>>(builder:JoinBuilder<NewTable>, typeHint:JoinType="JOIN") 
+        : This<typeof this, [...Tables, NewTable]> {
         const cls = builder.tables[0] as NewTable
         const q = this.createInstance(cls)
         this.copyInto(q as WhereQuery<any>)
 
         const refs = builder.tables.map(cls => this.refOf(cls) ?? this.$.ref(cls))
-        let { type, table, on, as, params } = builder.build(refs, typeHint)
+        let { type, on, params } = builder.build(refs, typeHint)
         if (on && params) {
             on = this.mergeParams({ sql:on, params })
         }
         const qProtected = q as any
-        qProtected._joins.push({ type, table, on, as, params })
+        qProtected._joins.push({ type, on, params })
 
         return q
     }
 
-    join<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>, 
+    join<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
-    }|SqlBuilder) {
-        return (cls as any).tables
+    }|SqlBuilder|Fragment) {
+        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        return !(cls as any)?.$ref && (cls as any).tables
             ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("JOIN", cls as NewTable, options))
+            : this.addJoin<NewTable>(joinOptions<NewTable>("JOIN", asType(cls), options, asRef(cls)))
     }
-    leftJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>, 
+    leftJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
-    }|SqlBuilder) {
-        return (cls as any).tables
+    }|SqlBuilder|Fragment) {
+        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        return !(cls as any)?.$ref && (cls as any).tables
             ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "LEFT JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("LEFT JOIN", cls as NewTable, options))
+            : this.addJoin<NewTable>(joinOptions<NewTable>("LEFT JOIN", asType(cls), options, asRef(cls)))
     }
-    rightJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>, 
+    rightJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
-    }|SqlBuilder) {
-        return (cls as any).tables
+    }|SqlBuilder|Fragment) {
+        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        return !(cls as any)?.$ref && (cls as any).tables
             ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "RIGHT JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("RIGHT JOIN", cls as NewTable, options))
+            : this.addJoin<NewTable>(joinOptions<NewTable>("RIGHT JOIN", asType(cls), options, asRef(cls)))
     }
-    fullJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>, 
+    fullJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
-    }|SqlBuilder) {
-        return (cls as any).tables
+    }|SqlBuilder|Fragment) {
+        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        return !(cls as any)?.$ref && (cls as any).tables
             ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "FULL JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("FULL JOIN", cls as NewTable, options))
+            : this.addJoin<NewTable>(joinOptions<NewTable>("FULL JOIN", asType(cls), options, asRef(cls)))
     }
-    crossJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>, 
+    crossJoin<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
-    }|SqlBuilder) {
-        return (cls as any).tables
+    }|SqlBuilder|Fragment) {
+        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        return !(cls as any)?.$ref && (cls as any).tables
             ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "CROSS JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("CROSS JOIN", cls as NewTable, options))
+            : this.addJoin<NewTable>(joinOptions<NewTable>("CROSS JOIN", asType(cls), options, asRef(cls)))
     }
 
     where(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
@@ -337,7 +339,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> {
         return prefix + this.driver.quoteColumn(column) 
     }
 
-    alias(alias?:string) {
+    as(alias?:string) {
         this.refs[0] = this.$.ref(this.refs[0].$ref.cls, alias)
         return this
     }
@@ -419,7 +421,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> {
 
     buildWhere() {
         if (this._where.length === 0) return ''
-        let sb = ' WHERE '
+        let sb = '\n WHERE '
         for (const [i, { condition, sql }] of this._where.entries()) {
             if (i > 0) sb += ` ${condition} `
             sb += sql
@@ -430,15 +432,21 @@ export class WhereQuery<Tables extends Constructor<any>[]> {
     buildJoins() {
         if (this._joins.length == 0) return ''
         let sql = ''
-        for (const { type, table, as, on } of this._joins) {
-            const quotedTable = this.driver.quoteTable(table)
-            const sqlAs = as && as !== quotedTable
-                ? ` ${as}`
+        for (let i = 0; i<this._joins.length; i++) {
+            const { type, on } = this._joins[i]
+            const ref = this.refs[i + 1]
+            const meta = this.metas[i + 1]
+            const quotedTable = this.driver.quoteTable(meta.tableName)
+            const refAs = ref.$ref.as
+            const sqlAs = refAs && refAs !== quotedTable
+                ? ` ${refAs}`
                 : ''
             const sqlOn = typeof on == 'string'
                 ? ` ON ${on}`
                 : ''
-            sql += ` ${type ?? 'JOIN'} ${quotedTable}${sqlAs}${sqlOn}`
+            let joinType = type ?? 'JOIN'
+            const spaces = leftPart(joinType, ' ')!.length <= 4 ? '  ' : ' '
+            sql += `\n${spaces}${type ?? 'JOIN'} ${quotedTable}${sqlAs}${sqlOn}`
         }
         return sql
     }
@@ -448,3 +456,4 @@ export class WhereQuery<Tables extends Constructor<any>[]> {
         return { sql, params: this.params }
     }
 }
+
