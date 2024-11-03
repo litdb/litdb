@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import type { SqlBuilder } from '../src/types'
+import type { SqlBuilder } from '../src'
 import { sqlite as $ } from '../src'
 import { Contact, Freight, Order } from './data'
 import { str } from './utils'

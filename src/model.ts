@@ -2,8 +2,8 @@ import { ColumnType, Constructor } from "./types";
 
 // @table annotation
 export function table(options?: {
-        alias?: string
-    }) {
+    alias?: string
+}) {
     return function (target: any) {
         const table =  Object.assign({}, options, { name:options?.alias ?? target.name });
         if (!target.$id) target.$id = Symbol(target.name)
@@ -14,16 +14,16 @@ export function table(options?: {
 
 // @column annotation
 export function column(type:ColumnType|symbol, options?: {
-        alias?: string
-        primaryKey?: boolean
-        autoIncrement?: boolean
-        required?: boolean
-        precision?: number
-        scale?: number
-        unique?: boolean
-        index?: boolean
-        defaultValue?: string
-    }) {
+    alias?: string
+    primaryKey?: boolean
+    autoIncrement?: boolean
+    required?: boolean
+    precision?: number
+    scale?: number
+    unique?: boolean
+    index?: boolean
+    defaultValue?: string
+}) {
     return function (target: any, propertyKey: string) {
         const column = Object.assign({}, options, { type:type, name:options?.alias ?? propertyKey })
         if (propertyKey === 'id') column.primaryKey = true
@@ -94,11 +94,6 @@ interface ColumnConfig {
 // Helper type to ensure all properties in columns are keys of T
 type ColumnsConfig<T> = {
     [K in keyof Partial<T>]: ColumnConfig
-}
-
-export interface DialectTypes {
-    native: DataType[]
-    map:    Record<string,DataType[]>
 }
 
 // Optional string enums containing constants for all values of `ColumnType`

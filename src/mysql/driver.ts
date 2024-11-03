@@ -1,5 +1,7 @@
-import { DataType, DialectTypes } from "../model"
+import type { ColumnType, DialectTypes } from "../types"
+import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
+import { MySqlDialect } from "./dialect"
 
 class MySqlTypes implements DialectTypes {
     // use as-is
@@ -14,7 +16,7 @@ class MySqlTypes implements DialectTypes {
         DataType.BLOB, DataType.BYTES, DataType.BIT,
     ]
     // use these types instead
-    map : Record<string,DataType[]> = {
+    map : Record<string,ColumnType[]> = {
     }
 }
 
@@ -29,5 +31,7 @@ export class MySql extends Sqlite
     constructor() {
         super()
         this.types = new MySqlTypes()
+        this.dialect = new MySqlDialect()
+        this.$ = this.dialect.$
     }
 }

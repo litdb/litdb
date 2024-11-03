@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll } from 'bun:test'
 import { contacts, Contact } from './data'
 import { sync as db, $ } from './db'
+import { omit, pick } from '../src'
 
 describe('SQLite Driver Tests', () => {
 
@@ -8,12 +9,14 @@ describe('SQLite Driver Tests', () => {
         db.dropTable(Contact)
         db.createTable(Contact)
         db.insertAll(contacts)
-        $.logTable(db.all($.from(Contact)))
+        const origRows = db.all($.from(Contact)) as Record<string,any>[]
+        $.dump(omit(origRows, ['phone','createdAt','updatedAt']))
+        $.dump(pick(origRows, ['id','firstName','lastName','age']))
     })
 
     it ('should be able to run a test', () => {
         let getContact = (id:number) => 
-            db.single<Contact>`select firstName, lastName from Contact where id = ${id}`
+            db.one<Contact>`select firstName, lastName from Contact where id = ${id}`
 
         let contact = getContact(1)!
         $.log(contact)

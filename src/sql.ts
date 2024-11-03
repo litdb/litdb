@@ -2,7 +2,8 @@ import type {
     Constructor, ConstructorsToRefs, ConstructorToTypeRef, Dialect, First, Fragment, 
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
-import { Meta, Schema } from "./connection"
+import { Meta } from "./meta"
+import { Schema } from "./schema"
 import { asRef, asType, mergeParams } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
@@ -115,7 +116,7 @@ export class Sql
         }
 
         $.log = function(obj:any){ console.log(Inspect.dump(obj)) }
-        $.logTable = function(obj:any[]){ console.log(Inspect.dumpTable(obj)) }
+        $.dump = function(obj:any[]){ console.log(Inspect.dumpTable(obj)) }
     
         return $
     }

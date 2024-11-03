@@ -32,6 +32,40 @@ export function uniqueKeys(rows:any[]) : string[] {
     return to
 }
 
+export function pick<T extends Record<string, any> | Record<string, any>[]>(
+    input: T,
+    keys: string[]
+) : T extends Record<string, any>[] ? Record<string, any>[] : Record<string, any> {
+    if (Array.isArray(input)) {
+        return input.map(item => 
+        keys.reduce((obj, key) => ({
+            ...obj,
+            [key]: item[key]
+        }), {})
+        ) as any
+    }
+    return keys.reduce((obj, key) => ({
+        ...obj,
+        [key]: input[key]
+    }), {}) as any
+}
+export function omit<T extends Record<string, any> | Record<string, any>[]>(
+    input: T,
+    keys: string[]
+) : T extends Record<string, any>[] ? Record<string, any>[] : Record<string, any> {
+    if (Array.isArray(input)) {
+      return input.map(item => {
+        const result = { ...item }
+        keys.forEach(key => delete result[key])
+        return result
+      }) as Record<string, any>[]
+    }
+    
+    const result = { ...input }
+    keys.forEach(key => delete (result as any)[key])
+    return result as T extends Record<string, any>[] ? Record<string, any>[] : Record<string, any>
+}
+
 export function leftPart(s:string, needle:string) {
     if (s == null) return null
     let pos = s.indexOf(needle)
@@ -84,4 +118,8 @@ export function asType<NewTable extends Constructor<any>>(cls:NewTable|JoinBuild
 export function asRef<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>) 
     : TypeRef<InstanceType<NewTable>>|undefined {
     return typeof cls == 'object' && (cls as any).$ref ? cls as TypeRef<InstanceType<NewTable>> : undefined
+}
+
+export function isTemplateStrings(arg: any): arg is TemplateStringsArray {
+    return Array.isArray(arg) && 'raw' in arg;
 }

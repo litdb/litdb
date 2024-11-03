@@ -56,6 +56,12 @@ export type ColumnType = 'INTEGER' | 'SMALLINT' | 'BIGINT'
     | 'UUID' | 'BLOB' | 'BYTES' | 'BIT'
     | 'TEXT' | 'VARCHAR' | 'NVARCHAR' | 'CHAR' | 'NCHAR' | 'JSON' | 'JSONB' | 'XML'
 
+
+export type DialectTypes = {
+    native: ColumnType[]
+    map:    Record<string,ColumnType[]>
+}
+
 export type Constructor<T = any> = new (...args: any[]) => T
 export type ConstructorWithParams<T, P extends any[]> = new (...args: P) => T
 
@@ -88,25 +94,24 @@ export interface ColumnDefinition {
 
 export interface Statement<ReturnType, ParamsType extends DbBinding[]> {
     get native():any
-
     all(...params: ParamsType): Promise<ReturnType[]>
-    allSync(...params: ParamsType): ReturnType[]
     one(...params: ParamsType): Promise<ReturnType | null>
-    oneSync(...params: ParamsType): ReturnType | null
-
-    column<ReturnValue>(...params: ParamsType): Promise<ReturnValue[]>
-    columnSync<ReturnValue>(...params: ParamsType): ReturnValue[]
-
     value<ReturnValue>(...params: ParamsType): Promise<ReturnValue | null>
-    valueSync<ReturnValue>(...params: ParamsType): ReturnValue | null
-
     arrays(...params: ParamsType): Promise<any[][]>
-    arraysSync(...params: ParamsType): any[][]
     array(...params: ParamsType): Promise<any[] | null>
-    arraySync(...params: ParamsType): any[] | null
-
     exec(...params: ParamsType): Promise<{ changes: number; lastInsertRowid: number | bigint; }>
+    run(...params: ParamsType): Promise<void>
+}
+
+export interface SyncStatement<ReturnType, ParamsType extends DbBinding[]> {
+    get native():any
+    allSync(...params: ParamsType): ReturnType[]
+    oneSync(...params: ParamsType): ReturnType | null
+    valueSync<ReturnValue>(...params: ParamsType): ReturnValue | null
+    arraysSync(...params: ParamsType): any[][]
+    arraySync(...params: ParamsType): any[] | null
     execSync(...params: ParamsType): { changes: number; lastInsertRowid: number | bigint; }
+    runSync(...params: ParamsType): void
 }
 
 export interface NamingStrategy {
@@ -140,9 +145,11 @@ export interface Dialect {
     sqlLimit(skip?: number, take?: number): Fragment
 }
 
-export interface Driver extends Dialect
+export interface Driver
 {
     get name(): string
+
+    get dialect(): Dialect
     
     get async(): Connection
     
@@ -156,13 +163,17 @@ export interface Driver extends Dialect
 
     sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition): string
 
-    prepareRaw<ReturnType, ParamsType extends DbBinding[]>(sql:String) 
+    prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
-    
-    prepare<ReturnType, ParamsType extends DbBinding[]>(strings: TemplateStringsArray, ...params: DbBinding[])
-        : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
-}
+    prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 
+    // prepareTemplate<ReturnType, ParamsType extends DbBinding[]>(strings: TemplateStringsArray, ...params: DbBinding[])
+    //     : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
+    // prepareTemplateSync<ReturnType, ParamsType extends DbBinding[]>(strings: TemplateStringsArray, ...params: DbBinding[])
+    //     : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
+}
+    
 export type Fragment = { sql:string, params?:Record<string,any> }
 
 export interface SqlBuilder {

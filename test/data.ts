@@ -1,4 +1,4 @@
-import { DataType, table, column, DefaultValues, Table } from "../src/model"
+import { DataType, table, column, DefaultValues, Table } from "../src"
 
 @table()
 export class Contact {
@@ -90,6 +90,7 @@ export const contacts = [
         id: 1,
         firstName: 'John',
         lastName: 'Doe',
+        age: 27,
         email: 'john.doe@example.com',
         phone: '123-456-7890',
         address: '123 Main St',
@@ -101,6 +102,7 @@ export const contacts = [
         id: 2,
         firstName: 'Jane',
         lastName: 'Smith',
+        age: 27,
         email: 'jane.smith@example.com',
         phone: '098-765-4321',
         address: '456 Elm St',
@@ -112,6 +114,7 @@ export const contacts = [
         id: 3,
         firstName: 'Alice',
         lastName: 'Johnson',
+        age: 21,
         email: 'alice.johnson@example.com',
         phone: '555-123-4567',
         address: '789 Oak St',
@@ -123,6 +126,7 @@ export const contacts = [
         id: 4,
         firstName: 'Bob',
         lastName: 'Williams',
+        age: 40,
         email: 'bob.williams@example.com',
         phone: '111-222-3333',
         address: '321 Pine St',
@@ -134,6 +138,7 @@ export const contacts = [
         id: 5,
         firstName: 'Charlie',
         lastName: 'Brown',
+        age: 50,
         email: 'charlie.brown@example.com',
         phone: '999-888-7777',
         address: '654 Cedar St',

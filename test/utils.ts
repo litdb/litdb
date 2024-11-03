@@ -1,4 +1,4 @@
-import { SqlBuilder } from "../src/types"
+import { SqlBuilder } from "../src"
 
 export function str(q:SqlBuilder|string) {
     if (typeof q == 'string') 

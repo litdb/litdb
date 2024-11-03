@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'bun:test'
-import { Sqlite } from '../src'
-import { DataType } from "../src/model"
+import type { ReflectMeta } from '../src'
+import { Sqlite, DataType, Schema } from '../src'
 import { Contact } from './data'
-import { Schema } from '../src/connection'
-import { ReflectMeta } from '../src/types'
 
 describe ('SQLite Create Table Tests', () => {
 

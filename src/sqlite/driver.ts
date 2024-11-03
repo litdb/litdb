@@ -1,11 +1,13 @@
 import type { 
-    ColumnDefinition, DbBinding, Driver, Fragment, NamingStrategy, 
-    Statement, TableDefinition, TypeConverter 
+    ColumnDefinition, DbBinding, Driver, Fragment, NamingStrategy, Statement, SyncStatement, 
+    TableDefinition, TypeConverter, DialectTypes, ColumnType,
+    Dialect,
 } from "../types"
 import { Connection, DefaultNamingStrategy, SyncConnection, DriverRequired } from "../connection"
 import { converterFor, DateTimeConverter } from "../converters"
-import { DataType, DefaultValues, DialectTypes } from "../model"
+import { DataType, DefaultValues } from "../model"
 import { Sql } from "../sql"
+import { SqliteDialect } from "./dialect"
 
 export class SqliteTypes implements DialectTypes {
     // use as-is
@@ -15,7 +17,7 @@ export class SqliteTypes implements DialectTypes {
         DataType.NUMERIC, DataType.DECIMAL, DataType.BOOLEAN, DataType.DATE, DataType.DATETIME, //NUMERIC
     ]
     // use these types instead
-    map: Record<string,DataType[]> = {
+    map: Record<string,ColumnType[]> = {
         INTEGER: [DataType.INTERVAL],
         REAL:    [DataType.REAL],
         NUMERIC: [DataType.DECIMAL, DataType.NUMERIC, DataType.MONEY],
@@ -38,6 +40,7 @@ export class Sqlite implements Driver
     async: Connection
     sync: SyncConnection
     name: string
+    dialect:Dialect
     $:ReturnType<typeof Sql.create>
     strategy:NamingStrategy = new DefaultNamingStrategy()
     variables: { [key: string]: string } = {
@@ -54,18 +57,13 @@ export class Sqlite implements Driver
     }
 
     constructor() {
-        this.$ = Sql.create(this)
+        this.dialect = new SqliteDialect()
+        this.$ = this.dialect.$
         this.name = this.constructor.name
         this.async = new Connection(this, this.$)
         this.sync = new SyncConnection(this, this.$)
         this.types = new SqliteTypes()
     }
-
-    quote(name: string): string { return `"${name}"` }
-    
-    quoteTable(name: string): string { return this.quote(this.strategy.tableName(name)) }
-
-    quoteColumn(name: string): string { return this.quote(this.strategy.columnName(name)) }
 
     sqlTableNames(): string {
         return "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%'"
@@ -73,7 +71,7 @@ export class Sqlite implements Driver
 
     sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition): string {
         const unique = column.unique ? 'UNIQUE INDEX' : 'INDEX'
-        return `CREATE ${unique} idx_${table.name}_${column.name} ON ${this.quoteTable(table.name)} (${this.quoteColumn(column.name)})`
+        return `CREATE ${unique} idx_${table.name}_${column.name} ON ${this.dialect.quoteTable(table.name)} (${this.dialect.quoteColumn(column.name)})`
     }
 
     sqlColumnDefinition(column: ColumnDefinition): string {
@@ -89,7 +87,7 @@ export class Sqlite implements Driver
         }
         if (!type) type = dataType
 
-        let sb = `${this.quoteColumn(column.name)} ${type}`
+        let sb = `${this.dialect.quoteColumn(column.name)} ${type}`
         if (column.primaryKey) {
             sb += ' PRIMARY KEY'
         }
@@ -118,13 +116,12 @@ export class Sqlite implements Driver
         return frag
     }
 
-    prepareRaw<ReturnType, ParamsType extends DbBinding | DbBinding[]>(sql: string) 
+    prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         throw new Error(DriverRequired)
     }
-    
-    prepare<ReturnType, ParamsType extends DbBinding[]>(strings: TemplateStringsArray, ...params: DbBinding[])
-        : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+    prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         throw new Error(DriverRequired)
     }
 }

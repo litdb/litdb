@@ -1,5 +1,7 @@
-import { DataType, DialectTypes } from "../model"
+import type { ColumnType, DialectTypes } from "../types"
+import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
+import { PostgreSqlDialect } from "./dialect"
 
 class PostgreSqlTypes implements DialectTypes {
     // use as-is
@@ -14,7 +16,7 @@ class PostgreSqlTypes implements DialectTypes {
         DataType.BLOB, DataType.BYTES, DataType.BIT,
     ]
     // use these types instead
-    map : Record<string,DataType[]> = {
+    map : Record<string,ColumnType[]> = {
     }
 }
 
@@ -29,5 +31,7 @@ export class PostgreSql extends Sqlite
     constructor() {
         super()
         this.types = new PostgreSqlTypes()
+        this.dialect = new PostgreSqlDialect()
+        this.$ = this.dialect.$
     }
 }
