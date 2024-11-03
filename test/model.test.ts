@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'bun:test'
+import { Sqlite } from '../src'
 import { DataType } from "../src/model"
-import { Contact, contacts } from './data'
+import { Contact } from './data'
 import { Schema } from '../src/connection'
 import { ReflectMeta } from '../src/types'
-import { sync as db } from './db'
 
 describe ('SQLite Create Table Tests', () => {
 
@@ -14,12 +14,12 @@ describe ('SQLite Create Table Tests', () => {
     })
 
     it ('does generate DROP Contact Table', () => {
-        const sql = Schema.dropTable(Contact, db.driver)
+        const sql = Schema.dropTable(Contact, Sqlite.driver)
         expect(sql).toContain('DROP TABLE IF EXISTS "Contact"')
     })
 
     it ('does generate CREATE Contact Table', () => {
-        const sql = Schema.createTable(Contact, db.driver)
+        const sql = Schema.createTable(Contact, Sqlite.driver)
         expect(sql).toContain('CREATE TABLE "Contact"')
         expect(sql).toContain('"id" INTEGER PRIMARY KEY AUTOINCREMENT')
         expect(sql).toContain('"firstName" TEXT NOT NULL')
@@ -34,7 +34,7 @@ describe ('SQLite Create Table Tests', () => {
     })
 
     it ('does generate INSERT Contact', () => {
-        const sql = Schema.insert(Contact, db.driver)
+        const sql = Schema.insert(Contact, Sqlite.driver)
         expect(sql).toContain('INSERT INTO "Contact" ' + 
             '("firstName", "lastName", "age", "email", "phone", "address", "city", "state", "postCode", "createdAt", "updatedAt")' + 
             ' VALUES ($firstName, $lastName, $age, $email, $phone, $address, $city, $state, $postCode, $createdAt, $updatedAt)')
@@ -42,29 +42,15 @@ describe ('SQLite Create Table Tests', () => {
 
     it ('does generate INSERT Contact onlyFields', () => {
         const onlyProps = ['firstName', 'lastName', 'email']
-        const sql = Schema.insert(Contact, db.driver, { onlyProps })
+        const sql = Schema.insert(Contact, Sqlite.driver, { onlyProps })
         expect(sql).toContain('INSERT INTO "Contact" ("firstName", "lastName", "email") VALUES ($firstName, $lastName, $email)')
     })
 
     it ('does generate UPDATE Contact', () => {
-        const sql = Schema.update(Contact, db.driver)
+        const sql = Schema.update(Contact, Sqlite.driver)
         expect(sql).toContain('UPDATE "Contact" SET "firstName"=$firstName, "lastName"=$lastName, "age"=$age, ' + 
             '"email"=$email, "phone"=$phone, "address"=$address, "city"=$city, "state"=$state, "postCode"=$postCode, ' + 
             '"createdAt"=$createdAt, "updatedAt"=$updatedAt WHERE "id" = $id')
-    })
-
-    it ('should generate Contact Table SQL', () => {
-
-        db.dropTable(Contact)
-
-        expect(db.listTables()).not.toContain(Contact.name)
-
-        db.createTable(Contact)
-
-        expect(db.listTables()).toContain(Contact.name)
-
-        //console.log('contacts[0]', contacts[0])
-        db.insert(contacts[0])
     })
 
     it ('should annoatate Contact', () => {
@@ -88,5 +74,4 @@ describe ('SQLite Create Table Tests', () => {
         const createdAt = $props.find(c => c.name === 'createdAt')?.column!
         expect(createdAt.type).toBe(DataType.DATETIME)
     })
-
 })

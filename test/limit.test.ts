@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
+import type { SqlBuilder } from '../src/types'
+import { sqlite as $ } from '../src'
 import { Contact } from './data'
-import { sync as db } from './db'
-import { SqlBuilder } from '../src/types'
 
 describe('SQLite LIMIT Tests', () => {
 
@@ -12,12 +12,12 @@ describe('SQLite LIMIT Tests', () => {
             expect(params).toEqual(expectedParams)
         }
 
-        assert(db.from(Contact).limit(5), `LIMIT $limit`, { limit: 5 })
-        assert(db.from(Contact).take(5), `LIMIT $limit`, { limit: 5 })
-        assert(db.from(Contact).limit(undefined, 10), `LIMIT $limit OFFSET $offset`, { limit: -1, offset: 10 })
-        assert(db.from(Contact).skip(10), `LIMIT $limit OFFSET $offset`, { limit: -1, offset: 10 })
-        assert(db.from(Contact).limit(5, 10), `LIMIT $limit OFFSET $offset`, { limit: 5, offset: 10 })
-        assert(db.from(Contact).skip(10).take(5), `LIMIT $limit OFFSET $offset`, { limit: 5, offset: 10 })
+        assert($.from(Contact).limit(5), `LIMIT $limit`, { limit: 5 })
+        assert($.from(Contact).take(5), `LIMIT $limit`, { limit: 5 })
+        assert($.from(Contact).limit(undefined, 10), `LIMIT $limit OFFSET $offset`, { limit: -1, offset: 10 })
+        assert($.from(Contact).skip(10), `LIMIT $limit OFFSET $offset`, { limit: -1, offset: 10 })
+        assert($.from(Contact).limit(5, 10), `LIMIT $limit OFFSET $offset`, { limit: 5, offset: 10 })
+        assert($.from(Contact).skip(10).take(5), `LIMIT $limit OFFSET $offset`, { limit: 5, offset: 10 })
     })
 
 })

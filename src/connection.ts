@@ -1,13 +1,17 @@
 import type { 
     Driver, DbBinding, ReflectMeta, ClassParam, ClassInstance, TableDefinition, 
-    Fragment, SqlBuilder, Statement, Constructor, 
-    TypeRef
+    Fragment, SqlBuilder, Statement,
 } from "./types"
-import { DeleteQuery } from "./builders/delete"
-import { SelectQuery } from "./builders/select"
-import { UpdateQuery } from "./builders/update"
 import { Sql } from "./sql"
-import { asRef, asType, propsWithValues } from "./utils"
+import { propsWithValues } from "./utils"
+
+export const DriverRequired = `Driver Implementation required, see: https://github.com/litdb/litdb`
+
+export const DriverRequiredProxy = new Proxy({}, {
+    get:(target: {}, key:string|symbol) => {
+        throw new Error(DriverRequired)
+    }
+})
 
 export class Meta {
     constructor(public cls:ReflectMeta) {
@@ -227,18 +231,6 @@ export class Schema {
 export class ConnectionBase {
     constructor(public driver:Driver, public $:ReturnType<typeof Sql.create>) {}
     quote(symbol:string) { return this.$.quote(symbol) }
-    from<Table extends Constructor<any>>(table:Table | TypeRef<InstanceType<Table>>, alias?:string) {
-        
-        const cls = asType(table)
-        const ref = asRef(table) ?? this.$.ref(table, alias ?? '')
-        return new SelectQuery(this.$, [cls], [Schema.assertMeta(cls)], [ref]) 
-    }
-    updateFor<Table extends Constructor<any>>(table:Table) { 
-        return new UpdateQuery(this.$, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 
-    }
-    deleteFrom<Table extends Constructor<any>>(table:Table) { 
-        return new DeleteQuery(this.$, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 
-    }
 }
 
 export class Connection extends ConnectionBase {
@@ -373,7 +365,7 @@ export class SyncConnection extends ConnectionBase {
 
     single<ReturnType>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) {
         const [stmt, p] = this.createStatment<ReturnType>(strings, ...params)
-        return Array.isArray(p) ? stmt.firstSync(...p) : stmt.firstSync(p)
+        return Array.isArray(p) ? stmt.oneSync(...p) : stmt.oneSync(p)
     }
 
     column<ReturnValue>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) {
@@ -383,7 +375,7 @@ export class SyncConnection extends ConnectionBase {
 
     scalar<ReturnValue>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) {
         const [stmt, p] = this.createStatment<ReturnValue>(strings, ...params)
-        return Array.isArray(p) ? stmt.scalarSync(...p) : stmt.scalarSync(p)
+        return Array.isArray(p) ? stmt.valueSync(...p) : stmt.valueSync(p)
     }
 
     exec(sql:string | SqlBuilder, params:Record<string,any>) {
@@ -396,7 +388,7 @@ export class SyncConnection extends ConnectionBase {
     }
 }
 
-export class NamingStrategy {
+export class DefaultNamingStrategy {
     tableName(table:string) : string { return table }
     columnName(column:string) : string { return column }
     tableFromDef(def:TableDefinition) : string { return def.alias ?? def.name }

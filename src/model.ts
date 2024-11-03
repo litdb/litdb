@@ -96,6 +96,11 @@ type ColumnsConfig<T> = {
     [K in keyof Partial<T>]: ColumnConfig
 }
 
+export interface DialectTypes {
+    native: DataType[]
+    map:    Record<string,DataType[]>
+}
+
 // Optional string enums containing constants for all values of `ColumnType`
 export enum DataType {
     INTEGER = 'INTEGER',

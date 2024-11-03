@@ -1,14 +1,12 @@
 import type { 
-    Constructor, First, Fragment, JoinBuilder, JoinDefinition, JoinParams, JoinType, Last, 
-    SqlBuilder, TypeRef, TypeRefs, WhereOptions 
-} from "../types"
-import { Meta, Schema } from "../connection"
-import { Sql } from "../sql"
-import { SelectQuery } from "./select"
-import { DeleteQuery } from "./delete"
-import { UpdateQuery } from "./update"
-import { asRef, asType, leftPart, nextParam, toStr } from "../utils"
-import { alignRight } from "../inspect"
+    Constructor, First, Last, Fragment, TypeRef, TypeRefs, WhereOptions, 
+    GroupByBuilder, HavingBuilder, JoinBuilder, OrderByBuilder, SqlBuilder,
+    JoinDefinition, JoinParams, JoinType, 
+} from "./types"
+import { Meta, Schema } from "./connection"
+import { Sql } from "./sql"
+import { asRef, asType, leftPart, nextParam, toStr } from "./utils"
+import { alignRight } from "./inspect"
 
 type OnJoin<
     First extends Constructor<any>, 
@@ -405,5 +403,269 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     build() {
         const sql = this.buildWhere()
         return { sql, params: this.params }
+    }
+}
+
+
+type SelectOptions = {
+    props?:string[],
+    columns?:string[],
+    sql?:Fragment|Fragment[],
+}
+
+export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
+
+    protected _select:string[] = []
+    protected _groupBy:string[] = []
+    protected _having:string[] = []
+    protected _orderBy:string[] = []
+    protected _skip:number | undefined
+    protected _take:number | undefined
+    protected _limit?:string
+    protected _into: Constructor<any>|undefined
+
+    copyInto(instance:SelectQuery<any>) {
+        super.copyInto(instance)
+        instance._select = Array.from(this._select)
+        instance._groupBy = Array.from(this._groupBy)
+        instance._having = Array.from(this._having)
+        instance._skip = this._skip
+        instance._take = this._take
+        instance._into = this._into
+        return instance
+    }
+
+    clone(): SelectQuery<Tables> { return super.clone() as SelectQuery<Tables> }
+
+    groupBy(options:TemplateStringsArray|Fragment|GroupByBuilder|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+        if (!options && params.length == 0) {
+            this._groupBy.length = 0
+        } else if (Array.isArray(options)) {
+            const frag = this.$(options as TemplateStringsArray, ...params)
+            this._groupBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'object') {
+            const frag = typeof (options as any).build == 'function' 
+                ? (options as any).build(this.refs)
+                : Schema.assertSql(options)
+            this._groupBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'function') {
+            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            this._groupBy.push(this.mergeParams(frag))
+        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        return this
+    }
+
+    having(options:TemplateStringsArray|Fragment|HavingBuilder|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+        if (!options && params.length == 0) {
+            this._having.length = 0
+        } else if (Array.isArray(options)) {
+            const frag = this.$(options as TemplateStringsArray, ...params)
+            this._having.push(this.mergeParams(frag))
+        } else if (typeof options == 'object') {
+            const frag = typeof (options as any).build == 'function' 
+                ? (options as any).build(this.refs)
+                : Schema.assertSql(options)
+            this._having.push(this.mergeParams(frag))
+        } else if (typeof options == 'function') {
+            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            this._having.push(this.mergeParams(frag))
+        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        return this
+    }
+
+    orderBy(options:TemplateStringsArray|Fragment|OrderByBuilder|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+        if (!options && params.length == 0) {
+            this._orderBy.length = 0
+        } else if (Array.isArray(options)) {
+            const frag = this.$(options as TemplateStringsArray, ...params)
+            this._orderBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'object') {
+            const frag = typeof (options as any).build == 'function' 
+                ? (options as any).build(this.refs)
+                : Schema.assertSql(options)
+            this._orderBy.push(this.mergeParams(frag))
+        } else if (typeof options == 'function') {
+            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            this._orderBy.push(this.mergeParams(frag))
+        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        return this
+    }
+
+    select(options:SelectOptions|TemplateStringsArray|string|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) {
+        if (!options && params.length === 0) {
+            this._select.length = 0
+        } else if (typeof options === 'string') {  
+            this._select.push(options)
+            if (params.length >= 1) {
+                this.addParams(params[0])
+            }
+        } else if (Array.isArray(options)) {
+            this._select.push(this.mergeParams(this.$(options as TemplateStringsArray, ...params)))
+        } else if (typeof options === 'object') {
+            const o = options as SelectOptions
+            if (o.sql) {
+                const sql = Array.isArray(o.sql) ? o.sql : [o.sql]
+                for (const fragment of sql) {
+                    this._select.push(fragment.sql)
+                    this.addParams(fragment.params)
+                }
+            }
+            if (o.props) {
+                for (const name of o.props) {
+                    const column = this.meta.props.find(x => x.name == name)?.column
+                    if (column) {
+                        this._select.push(this.quoteColumn(column.name))
+                    }
+                }
+            }
+            if (o.columns) {
+                for (const name of o.columns) {
+                    this._select.push(this.quoteColumn(name))
+                }
+            }
+        } else if (typeof options == 'function') {
+            const sql = Schema.assertSql(options.call(this, ...this.refs))
+            this._select.push(this.mergeParams(sql))
+        } else throw new Error(`Invalid select(${typeof options})`)
+        return this
+    }
+
+    get hasSelect() { return this._select.length > 0 }
+
+    skip(rows?:number) {
+        return this.limit(this._take, rows)
+    }
+    take(rows?:number) {
+        return this.limit(rows, this._skip)
+    }
+    limit(take?:number, skip?:number) {
+        this._take = take == null ? undefined : take
+        this._skip = skip == null ? undefined : skip
+        if (take == null && skip == null) {
+            this._limit = undefined
+        } else {
+            const frag = this.$.dialect.sqlLimit(this._skip, this._take) 
+            this._limit = this.mergeParams(frag)
+        }
+        return this
+    }
+
+    into<T extends Constructor<any>>(cls:T) {
+        this._into = cls
+        return this
+    }
+
+    protected buildSelect() {
+        //console.log('buildSelect', this._select)
+        const sqlSelect = this._select.length > 0 
+            ? this._select.join(', ') 
+            : this.meta.columns.map(x => this.quoteColumn(x.name)).join(', ')
+        const sql = `SELECT ${sqlSelect}`
+        return sql
+    }
+
+    protected buildFrom() {
+        const quotedTable = this.quoteTable(this.meta.tableName)
+        let sql = `\n  FROM ${quotedTable}`
+        const alias = this.refs[0].$ref.as
+        if (alias && alias != quotedTable) {
+            sql += ` ${alias}`
+        }
+        return sql
+    }
+
+    protected buildGroupBy() {
+        if (this._groupBy.length == 0) return ''
+        return `\n GROUP BY ${this._groupBy.join(', ')}`
+    }
+
+    protected buildHaving() {
+        if (this._having.length == 0) return ''
+        return `\n HAVING ${this._having.join('\n   AND ')}`
+    }
+
+    protected buildOrderBy() {
+        if (this._orderBy.length == 0) return ''
+        return `\n ORDER BY ${this._orderBy.join(', ')}`
+    }
+
+    protected buildLimit() {
+        return this._limit ? `\n ${this._limit}` : ''
+    }
+
+    build() {
+        let sql = this.buildSelect() 
+            + this.buildFrom() 
+            + this.buildJoins() 
+            + this.buildWhere() 
+            + this.buildGroupBy() 
+            + this.buildHaving()
+            + this.buildOrderBy()
+            + this.buildLimit()
+        // console.log(`\n${sql}\n`)
+        return { 
+            sql,
+            params: this.params, 
+            into: this._into ?? (this._select.length == 0 ? this.tables[0] : undefined) 
+        }
+    }
+}
+
+export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
+    private _set:string[] = []
+
+    set(options:{ sql?:Fragment|Fragment[], rawSql?:string|string[], values?:Record<string,any> }) {
+        if (!options) {
+            this._set.length = 0
+        } else if (options.sql) {
+            const sql = Array.isArray(options.sql) ? options.sql : [options.sql]
+            for (const fragment of sql) {
+                this._set.push(fragment.sql)
+                this.addParams(fragment.params)
+            }
+        }
+        if (options.rawSql) {
+            const sql = Array.isArray(options.rawSql) ? options.rawSql : [options.rawSql]
+            for (const fragment of sql) {
+                this._set.push(fragment)
+            }
+        }
+        if (options.values) {
+            for (const [key, value] of Object.entries(options.values)) {
+                const prop = this.meta.props.find(x => x.name === key)
+                if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
+                if (!prop.column) throw new Error(`Property ${key} is not a column`)
+                this.params[prop.name] = value
+                this._set.push(`${this.$.quote(prop.column.name)} = $${prop.name}`)
+            }
+        }
+        return this
+    }
+
+    get hasSet() { return this._set.length > 0 }
+
+    buildUpdate() {
+        const sqlSet = this._set.join(', ')
+        const sql = `UPDATE ${this.quoteTable(this.meta.tableName)} SET ${sqlSet}${this.buildWhere()}`
+        return sql
+    }
+
+    build() {
+        const sql = this.buildUpdate()
+        return { sql, params:this.params }
+    }
+}
+
+
+export class DeleteQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> { 
+
+    buildDelete() {
+        const sql = `DELETE FROM ${this.quoteTable(this.meta.tableName)}${this.buildWhere()}`
+        return sql
+    }
+
+    build() {
+        const sql = this.buildDelete()
+        return { sql, params:this.params }
     }
 }

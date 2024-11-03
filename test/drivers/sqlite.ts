@@ -82,10 +82,10 @@ class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
     allSync(...params: ParamsType): ReturnType[] {
         return this.native.all(...params)
     }
-    first(...params: ParamsType): Promise<ReturnType | null> {
+    one(...params: ParamsType): Promise<ReturnType | null> {
         return Promise.resolve(this.native.get(...params))
     }
-    firstSync(...params: ParamsType): ReturnType | null {
+    oneSync(...params: ParamsType): ReturnType | null {
         return this.native.get(...params)
     }
 
@@ -96,10 +96,10 @@ class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
         return this.native.values(...params).map(row => row[0] as ReturnValue)
     }
 
-    scalar<ReturnValue>(...params: ParamsType): Promise<ReturnValue | null> {
+    value<ReturnValue>(...params: ParamsType): Promise<ReturnValue | null> {
         return Promise.resolve(this.native.values(...params).map(row => row[0] as ReturnValue)?.[0] ?? null)
     }
-    scalarSync<ReturnValue>(...params: ParamsType): ReturnValue | null {
+    valueSync<ReturnValue>(...params: ParamsType): ReturnValue | null {
         return this.native.values(...params).map(row => row[0] as ReturnValue)?.[0] ?? null
     }
 
@@ -123,10 +123,17 @@ class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
     execSync(...params: ParamsType): { changes: number; lastInsertRowid: number | bigint; } {
         //console.log('params',params)
         return this.native.run(...params)
-    }    
+    }
+
+    run(...params: ParamsType): Promise<void> {
+        return Promise.resolve(this.native.run(...params)).then(x => undefined)
+    }
+    runSync(...params: ParamsType):void {
+        this.native.run(...params)
+    }
 }
 
-class Types {
+class SqliteTypes {
     // SQLite aliases, use as-is
     static NATIVE = [
         DataType.INTEGER, DataType.SMALLINT, DataType.BIGINT, // INTEGER
@@ -144,6 +151,7 @@ class Types {
         ],
     }
 }
+
 
 class SqliteDriver implements Driver
 {
@@ -190,9 +198,9 @@ class SqliteDriver implements Driver
 
     sqlColumnDefinition(column: ColumnDefinition): string {
         let dataType = column.type as DataType
-        let type = Types.NATIVE.includes(dataType) ? dataType : undefined
+        let type = SqliteTypes.NATIVE.includes(dataType) ? dataType : undefined
         if (!type) {
-            for (const [sqliteType, typeMapping] of Object.entries(Types.map)) {
+            for (const [sqliteType, typeMapping] of Object.entries(SqliteTypes.map)) {
                 if (typeMapping.includes(dataType)) {
                     type = sqliteType as DataType
                     break

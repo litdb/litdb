@@ -91,14 +91,14 @@ export interface Statement<ReturnType, ParamsType extends DbBinding[]> {
 
     all(...params: ParamsType): Promise<ReturnType[]>
     allSync(...params: ParamsType): ReturnType[]
-    first(...params: ParamsType): Promise<ReturnType | null>
-    firstSync(...params: ParamsType): ReturnType | null
+    one(...params: ParamsType): Promise<ReturnType | null>
+    oneSync(...params: ParamsType): ReturnType | null
 
     column<ReturnValue>(...params: ParamsType): Promise<ReturnValue[]>
     columnSync<ReturnValue>(...params: ParamsType): ReturnValue[]
 
-    scalar<ReturnValue>(...params: ParamsType): Promise<ReturnValue | null>
-    scalarSync<ReturnValue>(...params: ParamsType): ReturnValue | null
+    value<ReturnValue>(...params: ParamsType): Promise<ReturnValue | null>
+    valueSync<ReturnValue>(...params: ParamsType): ReturnValue | null
 
     arrays(...params: ParamsType): Promise<any[][]>
     arraysSync(...params: ParamsType): any[][]
@@ -110,10 +110,8 @@ export interface Statement<ReturnType, ParamsType extends DbBinding[]> {
 }
 
 export interface NamingStrategy {
-    schemaName(schema:string) : string
     tableName(table:string) : string
     columnName(column:string) : string
-    schemaFromDef(def:TableDefinition) : string | undefined
     tableFromDef(def:TableDefinition) : string
 }
 

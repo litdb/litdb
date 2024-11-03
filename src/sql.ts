@@ -3,8 +3,9 @@ import type {
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta, Schema } from "./connection"
-import { mergeParams } from "./utils"
-import { alignRight } from "./inspect"
+import { asRef, asType, mergeParams } from "./utils"
+import { alignRight, Inspect } from "./inspect"
+import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
 
 export class Sql
 {
@@ -87,6 +88,19 @@ export class Sql
         $.fragment = function(sql:string, params:Record<string,any>): Fragment {
             return ({ sql, params })
         }
+
+        $.from = function<Table extends Constructor<any>>(table:Table | TypeRef<InstanceType<Table>>, alias?:string) {
+            const cls = asType(table)
+            const ref = asRef(table) ?? $.ref(table, alias ?? '')
+            return new SelectQuery<[Table]>($, [cls], [Schema.assertMeta(cls)], [ref])
+        }
+        $.update = function<Table extends Constructor<any>>(table:Table) { 
+            return new UpdateQuery<[Table]>($, [table], [Schema.assertMeta(table)], [$.ref(table,'')]) 
+        }
+        $.deleteFrom = function<Table extends Constructor<any>>(table:Table) { 
+            return new DeleteQuery<[Table]>($, [table], [Schema.assertMeta(table)], [$.ref(table,'')]) 
+        }
+    
         $.join = function<Tables extends Constructor<any>[]>(...tables:Tables) {
             return new SqlJoinBuilder<Tables>($, ...tables)
         }
@@ -99,6 +113,9 @@ export class Sql
         $.orderBy = function<Tables extends Constructor<any>[]>(...tables:Tables) {
             return new SqlOrderByBuilder<Tables>($, ...tables)
         }
+
+        $.log = function(obj:any){ console.log(Inspect.dump(obj)) }
+        $.logTable = function(obj:any[]){ console.log(Inspect.dumpTable(obj)) }
     
         return $
     }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
+import { sqlite as $ } from '../src'
 import { Contact, Order } from './data'
-import { $, sync as db } from './db'
 import { str } from './utils'
 
 describe('SQLite GROUP BY Tests', () => {
@@ -12,8 +12,7 @@ describe('SQLite GROUP BY Tests', () => {
              JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
             GROUP BY "Contact"."firstName"`)
         
-        const contactTotals = db
-            .from(Contact)
+        const contactTotals = $.from(Contact)
             .join(Order, { on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, SUM(${o.total})`)
         
@@ -36,7 +35,7 @@ describe('SQLite GROUP BY Tests', () => {
              JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
             GROUP BY "Contact"."firstName", "Contact"."city"`)
         
-        const q = db
+        const q = $
             .from(Contact)
             .join(Order, { on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, ${c.city}, SUM(${o.total})`)
@@ -61,7 +60,7 @@ describe('SQLite GROUP BY Tests', () => {
              JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
             GROUP BY "Contact"."firstName", "Order"."freightId"`)
         
-        const q = db
+        const q = $
             .from(Contact)
             .join(Order, { on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, ${o.freightId}, SUM(${o.total})`)
@@ -88,7 +87,7 @@ describe('SQLite GROUP BY Tests', () => {
              JOIN "Order" o ON c."id" = o."contactId" 
             GROUP BY c."firstName", o."freightId"`)
         
-        const q = db
+        const q = $
             .from(Contact,'c')
             .join(Order, { as:'o', on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, ${o.freightId}, SUM(${o.total})`)

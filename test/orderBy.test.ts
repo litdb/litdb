@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
+import { sqlite as $ } from '../src'
 import { Contact, Order } from './data'
-import { $, sync as db } from './db'
 import { str } from './utils'
 
 describe('SQLite ORDER BY Tests', () => {
@@ -12,7 +12,7 @@ describe('SQLite ORDER BY Tests', () => {
             JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
             ORDER BY "Contact"."firstName"`)
         
-        const contactTotals = db
+        const contactTotals = $
             .from(Contact)
             .join(Order, { on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, ${o.total}`)
@@ -36,7 +36,7 @@ describe('SQLite ORDER BY Tests', () => {
             JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
             ORDER BY "Contact"."firstName", "Contact"."city"`)
         
-        const q = db
+        const q = $
             .from(Contact)
             .join(Order, { on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, ${c.city}, ${o.total}`)
@@ -61,7 +61,7 @@ describe('SQLite ORDER BY Tests', () => {
              JOIN "Order" ON "Contact"."id" = "Order"."contactId" 
              ORDER BY "Contact"."firstName", "Order"."freightId"`)
         
-        const q = db
+        const q = $
             .from(Contact)
             .join(Order, { on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, ${o.freightId}, ${o.total}`)
@@ -88,7 +88,7 @@ describe('SQLite ORDER BY Tests', () => {
              JOIN "Order" o ON c."id" = o."contactId" 
             ORDER BY c."firstName", o."freightId"`)
         
-        const q = db
+        const q = $
             .from(Contact,'c')
             .join(Order, { as:'o', on:(c:Contact, o:Order) => $`${c.id} = ${o.contactId}` })
             .select((c, o) => $`${c.firstName}, ${o.freightId}, ${o.total}`)
