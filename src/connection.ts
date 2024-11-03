@@ -1,10 +1,10 @@
 import type { 
     Driver, DbBinding, ReflectMeta, ClassParam, ClassInstance, TableDefinition, 
-    Fragment, SqlBuilder, Statement,
-    SyncStatement,
+    Fragment, SqlBuilder, Statement, SyncStatement,
+    NamingStrategy,
 } from "./types"
 import { Sql } from "./sql"
-import { propsWithValues } from "./utils"
+import { propsWithValues, snakeCase } from "./utils"
 import { Schema } from "./schema"
 
 export const DriverRequired = `Driver Implementation required, see: https://github.com/litdb/litdb`
@@ -207,8 +207,14 @@ export class SyncConnection extends ConnectionBase {
     }
 }
 
-export class DefaultNamingStrategy {
+export class DefaultStrategy implements NamingStrategy {
     tableName(table:string) : string { return table }
     columnName(column:string) : string { return column }
     tableFromDef(def:TableDefinition) : string { return def.alias ?? def.name }
+}
+
+export class SnakeCaseStrategy implements NamingStrategy {
+    tableName(table:string) : string { return snakeCase(table) }
+    columnName(column:string) : string { return snakeCase(column) }
+    tableFromDef(def:TableDefinition) : string { return snakeCase(def.alias ?? def.name) }
 }

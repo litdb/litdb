@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'bun:test'
 import type { SqlBuilder } from '../src'
-import { sqlite as $ } from '../src'
+import { postgres as $, snakeCase, SnakeCaseStrategy } from '../src'
 import { Contact, DynamicPerson, Person } from './data'
 import { str } from './utils'
 
-const f = (name:string) => '"' + name + '"'
+$.dialect.strategy = new SnakeCaseStrategy()
+const f = (name:string) => '"' + snakeCase(name) + '"'
 const Q = (name:string) => Symbol(name)
 const [ qId, qFirstName, qAge, qCity, qContact ] = [ f('id'), f('firstName'), f('age'), f('city'), f('Contact') ]
 const [ sId ] = [ Q(qId) ]
@@ -15,7 +16,7 @@ export const selectContact = 'id,firstName,lastName,age,email,phone,address,city
 export const selectPerson = 'id,firstName,lastName,email'
     .split(',').map(c => f(c)).join(', ')
 
-describe('SQLite WHERE Tests', () => {
+describe('PostgreSQL snake_case WHERE Tests', () => {
 
     it ('Can query recommended shorthands', () => {
         const search = {            

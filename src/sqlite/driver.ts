@@ -3,7 +3,7 @@ import type {
     TableDefinition, TypeConverter, DialectTypes, ColumnType,
     Dialect,
 } from "../types"
-import { Connection, DefaultNamingStrategy, SyncConnection, DriverRequired } from "../connection"
+import { Connection, DefaultStrategy, SyncConnection, DriverRequired } from "../connection"
 import { converterFor, DateTimeConverter } from "../converters"
 import { DataType, DefaultValues } from "../model"
 import { Sql } from "../sql"
@@ -42,7 +42,7 @@ export class Sqlite implements Driver
     name: string
     dialect:Dialect
     $:ReturnType<typeof Sql.create>
-    strategy:NamingStrategy = new DefaultNamingStrategy()
+    strategy:NamingStrategy = new DefaultStrategy()
     variables: { [key: string]: string } = {
         [DefaultValues.NOW]: 'CURRENT_TIMESTAMP',
         [DefaultValues.MAX_TEXT]: 'TEXT',

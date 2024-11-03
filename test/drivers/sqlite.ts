@@ -4,8 +4,7 @@ import type {
 } from "../../src"
 import { 
     Sql, Connection, NamingStrategy, SyncConnection, DataType, DefaultValues, converterFor, DateTimeConverter, 
-    DialectTypes, DefaultNamingStrategy,
-    SqliteDialect,
+    DialectTypes, SqliteDialect, DefaultStrategy,
 } from "../../src"
 import { isTemplateStrings } from "../../src/utils"
 
@@ -164,7 +163,7 @@ class Sqlite implements Driver
     name: string
     dialect:Dialect
     $:ReturnType<typeof Sql.create>
-    strategy:NamingStrategy = new DefaultNamingStrategy()
+    strategy:NamingStrategy = new DefaultStrategy()
     variables: { [key: string]: string } = {
         [DefaultValues.NOW]: 'CURRENT_TIMESTAMP',
         [DefaultValues.MAX_TEXT]: 'TEXT',

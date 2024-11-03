@@ -1,10 +1,10 @@
 import type { Dialect, Fragment } from "../types"
-import { DefaultNamingStrategy } from "../connection"
+import { DefaultStrategy } from "../connection"
 import { Sql } from "../sql"
 
 export class SqliteDialect implements Dialect {
     $:ReturnType<typeof Sql.create>
-    strategy:DefaultNamingStrategy = new DefaultNamingStrategy()
+    strategy:DefaultStrategy = new DefaultStrategy()
     
     constructor() {
         this.$ = Sql.create(this)

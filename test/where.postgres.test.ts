@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import type { SqlBuilder } from '../src'
-import { sqlite as $ } from '../src'
+import { postgres as $ } from '../src'
 import { Contact, DynamicPerson, Person } from './data'
 import { str } from './utils'
 
@@ -15,7 +15,7 @@ export const selectContact = 'id,firstName,lastName,age,email,phone,address,city
 export const selectPerson = 'id,firstName,lastName,email'
     .split(',').map(c => f(c)).join(', ')
 
-describe('SQLite WHERE Tests', () => {
+describe('PostgreSQL WHERE Tests', () => {
 
     it ('Can query recommended shorthands', () => {
         const search = {            

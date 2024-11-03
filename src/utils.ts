@@ -123,3 +123,5 @@ export function asRef<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilde
 export function isTemplateStrings(arg: any): arg is TemplateStringsArray {
     return Array.isArray(arg) && 'raw' in arg;
 }
+
+export function snakeCase(s: string) { return (s || '').replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() }

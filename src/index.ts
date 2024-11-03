@@ -2,13 +2,13 @@ import type {
   ColumnDefinition, Driver, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, 
   TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType,
 } from "./types"
-import { Connection, ConnectionBase, DefaultNamingStrategy, SyncConnection } from "./connection"
+import { Connection, ConnectionBase, DefaultStrategy, SnakeCaseStrategy, SyncConnection } from "./connection"
 import { WhereQuery, SelectQuery, UpdateQuery, DeleteQuery, } from "./sql.builders"
 import { Sql } from "./sql"
 import { Meta } from "./meta"
 import { Schema } from "./schema"
 import { Inspect } from "./inspect"
-import { pick, omit, toStr, mergeParams, nextParam } from "./utils"
+import { pick, omit, toStr, mergeParams, nextParam, snakeCase } from "./utils"
 import { converterFor, DateTimeConverter } from "./converters"
 import { table, column, Table, DefaultValues, DataType, } from "./model"
 import { Sqlite } from "./sqlite/driver"
@@ -35,7 +35,8 @@ export {
   Dialect,
   DialectTypes, 
   ColumnType,
-  DefaultNamingStrategy,
+  DefaultStrategy,
+  SnakeCaseStrategy,
   WhereQuery,
   SelectQuery,
   UpdateQuery,
@@ -49,8 +50,8 @@ export {
   DefaultValues,
   DataType,
   ColumnDefinition, Driver, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, TypeConverter,
-  Sqlite, SqliteDialect,        sqlite,
+  Sqlite, SqliteDialect,         sqlite,
   MySql, MySqlDialect,           mysql,
   PostgreSql, PostgreSqlDialect, postgres,
-  pick, omit, toStr, mergeParams, nextParam,
+  pick, omit, toStr, mergeParams, nextParam, snakeCase,
 }

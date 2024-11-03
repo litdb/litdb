@@ -136,6 +136,8 @@ export interface Dialect {
     
     get $(): any
 
+    strategy: NamingStrategy
+
     quote(name: string): string
 
     quoteTable(name: string): string
