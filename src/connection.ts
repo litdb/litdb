@@ -225,34 +225,30 @@ export class Schema {
 }
 
 export class ConnectionBase {
-    $:ReturnType<typeof Sql.create>
-    constructor(public driver:Driver) {
-        if (!driver.$) throw new Error(`$ not in Driver: ${driver}`)
-        this.$ = driver.$ as ReturnType<typeof Sql.create>
-    }
-    quote(symbol:string) { return this.driver.quote(symbol) }
+    constructor(public driver:Driver, public $:ReturnType<typeof Sql.create>) {}
+    quote(symbol:string) { return this.$.quote(symbol) }
     from<Table extends Constructor<any>>(table:Table | TypeRef<InstanceType<Table>>, alias?:string) {
         
         const cls = asType(table)
         const ref = asRef(table) ?? this.$.ref(table, alias ?? '')
-        return new SelectQuery(this.driver, [cls], [Schema.assertMeta(cls)], [ref]) 
+        return new SelectQuery(this.$, [cls], [Schema.assertMeta(cls)], [ref]) 
     }
     updateFor<Table extends Constructor<any>>(table:Table) { 
-        return new UpdateQuery(this.driver, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 
+        return new UpdateQuery(this.$, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 
     }
     deleteFrom<Table extends Constructor<any>>(table:Table) { 
-        return new DeleteQuery(this.driver, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 
+        return new DeleteQuery(this.$, [table], [Schema.assertMeta(table)], [this.$.ref(table,'')]) 
     }
 }
 
 export class Connection extends ConnectionBase {
     get sync() { 
         if (this.driver.sync == null) {
-            throw new Error(`${this.driver.name} does not support sync APIs`)
+            throw new Error(`${this.$.name} does not support sync APIs`)
         }
         return this.driver.sync
     }
-    quote(symbol:string) { return this.driver.quote(symbol) }
+    quote(symbol:string) { return this.$.quote(symbol) }
     
     async insert<T extends ClassInstance>(row:T, options?:InsertOptions) {
         return Promise.resolve(this.sync.insert<T>(row, options))

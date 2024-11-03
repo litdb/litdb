@@ -1,6 +1,6 @@
 import type { 
-    Constructor, Driver, First, Fragment, JoinBuilder, JoinDefinition, 
-    JoinParams, JoinType, Last, SqlBuilder, TypeRef, TypeRefs, WhereOptions 
+    Constructor, First, Fragment, JoinBuilder, JoinDefinition, JoinParams, JoinType, Last, 
+    SqlBuilder, TypeRef, TypeRefs, WhereOptions 
 } from "../types"
 import { Meta, Schema } from "../connection"
 import { Sql } from "../sql"
@@ -61,16 +61,13 @@ type This<T, NewTables extends Constructor<any>[]> =
 export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder {
   
     constructor(
-        public driver:Driver, 
+        public $:ReturnType<typeof Sql.create>, 
         public tables: [...Tables], 
         public metas:Meta[], 
         public refs: TypeRefs<Tables>
     ) {
-        if (!driver.$) throw new Error(`$ not in Driver: ${driver}`)
-        this.$ = driver.$ as ReturnType<typeof Sql.create>
     }
 
-    $:ReturnType<typeof Sql.create>
     protected _where:{ condition:string, sql?:string }[] = []
     protected _joins:JoinDefinition[] = []
     public params:Record<string,any> = {}
@@ -106,7 +103,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         ref = ref ?? this.$.ref(table)
         
         return new (this.constructor as any)(
-            this.driver,
+            this.$,
             [...this.tables, table],
             [...this.metas, meta],
             [...this.refs, ref]
@@ -122,7 +119,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 
     clone() : WhereQuery<Tables> {
         const instance = new (this.constructor as any)(
-            this.driver,
+            this.$,
             [...this.tables],
             [...this.metas],
             [...this.refs]
@@ -283,13 +280,13 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return this
     }
 
-    quote(symbol:string) { return this.driver.quote(symbol) }
-    quoteTable(table:string) { return this.driver.quoteTable(table) }
+    quote(symbol:string) { return this.$.quote(symbol) }
+    quoteTable(table:string) { return this.$.quoteTable(table) }
     
     quoteColumn(column:string) { 
         const as = this.ref.$ref.as
         const prefix = as ? as + '.' : ''
-        return prefix + this.driver.quoteColumn(column) 
+        return prefix + this.$.quoteColumn(column) 
     }
 
     as(alias?:string) {
@@ -338,7 +335,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
                 if (!prop.column) throw new Error(`Property ${key} is not a column`)
                 columnNames.push(prop.column.name)
             }
-            const sql = columnNames.map(name => `${this.driver.quoteColumn(name)} ${Sql.ops[op]}`).join(` ${condition} `)
+            const sql = columnNames.map(name => `${this.$.quoteColumn(name)} ${Sql.ops[op]}`).join(` ${condition} `)
             this._where.push({ condition, sql })
             //console.log('addWhere', condition, sqlOp, values, op)
             //return
@@ -347,7 +344,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
                 const prop = this.meta.props.find(x => x.name === key)
                 if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
                 if (!prop.column) throw new Error(`Property ${key} is not a column`)
-                const sqlLeft = `${this.driver.quoteColumn(prop.column.name)} ${sqlOp}`
+                const sqlLeft = `${this.$.quoteColumn(prop.column.name)} ${sqlOp}`
                 if (Array.isArray(value)) {
                     let sqlValues = ``
                     for (const v in value) {
@@ -390,7 +387,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             const { type, on } = this._joins[i]
             const ref = this.refs[i + 1]
             const meta = this.metas[i + 1]
-            const quotedTable = this.driver.quoteTable(meta.tableName)
+            const quotedTable = this.$.quoteTable(meta.tableName)
             const refAs = ref.$ref.as
             const sqlAs = refAs && refAs !== quotedTable
                 ? ` ${refAs}`

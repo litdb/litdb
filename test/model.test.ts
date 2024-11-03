@@ -3,7 +3,7 @@ import { DataType } from "../src/model"
 import { Contact, contacts } from './data'
 import { Schema } from '../src/connection'
 import { ReflectMeta } from '../src/types'
-import { sync as db, $ } from './db'
+import { sync as db } from './db'
 
 describe ('SQLite Create Table Tests', () => {
 

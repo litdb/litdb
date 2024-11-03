@@ -1,5 +1,5 @@
 import type { 
-    Constructor, ConstructorsToRefs, ConstructorToTypeRef, Driver, First, Fragment, 
+    Constructor, ConstructorsToRefs, ConstructorToTypeRef, Dialect, First, Fragment, 
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta, Schema } from "./connection"
@@ -26,7 +26,7 @@ export class Sql
 
     static opKeys = Object.keys(Sql.ops)
 
-    public static create(driver:Driver) {
+    public static create(dialect:Dialect) {
         function $(strings: TemplateStringsArray|string, ...params: any[]) : Fragment {
             if (Array.isArray(strings)) {
                 let sb = ''
@@ -40,7 +40,7 @@ export class Sql
                         sb += value.description ?? ''
                     } else if (typeof value == 'object' && value.$ref) {
                         // if referencing proxy itself, return its quoted tableName
-                        sb += driver.quoteTable(Schema.assertMeta(value.$ref.cls).tableName)
+                        sb += dialect.quoteTable(Schema.assertMeta(value.$ref.cls).tableName)
                     } else if (typeof value == 'object' && typeof value.build == 'function') {
                         // Merge params of SqlBuilder and append SQL
                         const frag = (value as SqlBuilder).build()
@@ -61,19 +61,23 @@ export class Sql
                 return ({ sql:strings, params:params[0] })
             } else throw new Error(`sql(${typeof strings}) is invalid`)
         }
+        $.dialect = dialect
+        $.quote = dialect.quote.bind(dialect)
+        $.quoteColumn = dialect.quoteColumn.bind(dialect)
+        $.quoteTable = dialect.quoteTable.bind(dialect)
     
-        function quote(meta:Meta, prop:string) {
+        function quoteProp(meta:Meta, prop:string) {
             const p = meta.props.find(x => x.name == prop)?.column
             if (!p) throw new Error(`${meta.name} does not have a column property ${prop}`)
-            return driver.quoteColumn(p.name)
+            return dialect.quoteColumn(p.name)
         }
         $.ref = function<Table extends Constructor<any>>(cls:Table, as?:string) : TypeRef<InstanceType<Table>> {
             const meta = Schema.assertMeta(cls)
             if (as == null)
-                as = driver.quoteTable(meta.tableName)
+                as = dialect.quoteTable(meta.tableName)
             const get = (target: { prefix:string, meta:Meta }, key:string|symbol) => key == '$ref' 
                 ? { cls, as }
-                : Symbol(target.prefix + quote(meta, typeof key == 'string' ? key : key.description!))
+                : Symbol(target.prefix + quoteProp(meta, typeof key == 'string' ? key : key.description!))
             const p = new Proxy({ prefix: as ? as + '.' : '', meta }, { get })
             return p as any as TypeRef<InstanceType<Table>>
         }
@@ -84,16 +88,16 @@ export class Sql
             return ({ sql, params })
         }
         $.join = function<Tables extends Constructor<any>[]>(...tables:Tables) {
-            return new SqlJoinBuilder<Tables>(driver, ...tables)
+            return new SqlJoinBuilder<Tables>($, ...tables)
         }
         $.groupBy = function<Tables extends Constructor<any>[]>(...tables:Tables) {
-            return new SqlGroupByBuilder<Tables>(driver, ...tables)
+            return new SqlGroupByBuilder<Tables>($, ...tables)
         }
         $.having = function<Tables extends Constructor<any>[]>(...tables:Tables) {
-            return new SqlHavingBuilder<Tables>(driver, ...tables)
+            return new SqlHavingBuilder<Tables>($, ...tables)
         }
         $.orderBy = function<Tables extends Constructor<any>[]>(...tables:Tables) {
-            return new SqlOrderByBuilder<Tables>(driver, ...tables)
+            return new SqlOrderByBuilder<Tables>($, ...tables)
         }
     
         return $
@@ -105,16 +109,14 @@ export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBu
     get table() { return this.tables[0] as First<Tables> }
     tables: Tables
     refs: ConstructorsToRefs<Tables>
-    $:ReturnType<typeof Sql.create>
     exprs:{ type:JoinType, expr:((refs:ConstructorsToRefs<Tables>) => Fragment) }[]=[]
 
     params:Record<string,any> = {}
     alias:string =''
     buildOn?:(refs:ConstructorsToRefs<Tables>, params:Record<string,any>) => string
 
-    constructor(public driver:Driver, ...tables:Tables) {
+    constructor(public $:ReturnType<typeof Sql.create>, ...tables:Tables) {
         this.tables = tables
-        this.$ = driver.$ as ReturnType<typeof Sql.create>
         this.refs = this.tables.map(x => this.$.ref(x)) as ConstructorsToRefs<Tables>
     }
 
@@ -165,15 +167,12 @@ export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBu
 }
 
 export class SqlBuilderBase<Tables extends Constructor<any>[]> {
-    $:ReturnType<typeof Sql.create>
-
     tables:Tables
     params:Record<string,any> = {}
     exprs:((refs:ConstructorsToRefs<Tables>) => Fragment)[]=[]
     delimiter = ', '
 
-    constructor(public driver:Driver, ...tables:Tables) {
-        this.$ = driver.$ as ReturnType<typeof Sql.create>
+    constructor(public $:ReturnType<typeof Sql.create>, ...tables:Tables) {
         this.tables = tables
     }
 
@@ -201,8 +200,8 @@ export class SqlBuilderBase<Tables extends Constructor<any>[]> {
 export class SqlGroupByBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements GroupByBuilder {}
 export class SqlOrderByBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements OrderByBuilder {}
 export class SqlHavingBuilder<Tables extends Constructor<any>[]> extends SqlBuilderBase<Tables> implements HavingBuilder {
-    constructor(public driver:Driver, ...tables:Tables) {
-        super(driver, ...tables)
+    constructor($:ReturnType<typeof Sql.create>, ...tables:Tables) {
+        super($, ...tables)
         this.delimiter = '\n  AND '
     }
 }

@@ -139,7 +139,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         if (take == null && skip == null) {
             this._limit = undefined
         } else {
-            const frag = this.driver.sqlLimit(this._skip, this._take) 
+            const frag = this.$.dialect.sqlLimit(this._skip, this._take) 
             this._limit = this.mergeParams(frag)
         }
         return this

@@ -128,10 +128,22 @@ export interface DbRow {
     values: { [key: string]: any }
 }
 
-export interface Driver
-{
+// Minimum interface required to use QueryBuilder
+export interface Dialect {
+    
     get $(): any
 
+    quote(name: string): string
+
+    quoteTable(name: string): string
+
+    quoteColumn(name: string): string
+
+    sqlLimit(skip?: number, take?: number): Fragment
+}
+
+export interface Driver extends Dialect
+{
     get name(): string
     
     get async(): Connection
@@ -140,19 +152,11 @@ export interface Driver
 
     get converters(): { [key: string]: TypeConverter }
 
-    quote(name: string): string
-    
-    quoteTable(name: string): string
-
-    quoteColumn(name: string): string
+    sqlTableNames(schema?: string): string
 
     sqlColumnDefinition(column: ColumnDefinition): string
 
     sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition): string
-
-    sqlTableNames(schema?: string): string
-
-    sqlLimit(skip?: number, take?: number): Fragment
 
     prepareRaw<ReturnType, ParamsType extends DbBinding[]>(sql:String) 
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>

@@ -26,7 +26,7 @@ export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
                 if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
                 if (!prop.column) throw new Error(`Property ${key} is not a column`)
                 this.params[prop.name] = value
-                this._set.push(`${this.driver.quote(prop.column.name)} = $${prop.name}`)
+                this._set.push(`${this.$.quote(prop.column.name)} = $${prop.name}`)
             }
         }
         return this
