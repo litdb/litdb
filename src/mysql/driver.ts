@@ -17,6 +17,15 @@ class MySqlTypes implements DialectTypes {
     ]
     // use these types instead
     map : Record<string,ColumnType[]> = {
+        [DataType.DOUBLE]: [DataType.REAL],
+        [DataType.MONEY]: [DataType.DECIMAL],
+        [DataType.TIME]: [DataType.TIMEZ],
+        [DataType.TIMESTAMP]: [DataType.TIMESTAMPZ],
+        [DataType.INTEGER]: [DataType.INTERVAL],
+        [DataType.JSON]: [DataType.JSONB],
+        [DataType.TEXT]: [DataType.XML],
+        "BINARY": [DataType.BYTES],
+        "BINARY(1)": [DataType.BIT],
     }
 }
 
