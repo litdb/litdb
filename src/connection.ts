@@ -4,7 +4,7 @@ import type {
     NamingStrategy,
 } from "./types"
 import { Sql } from "./sql"
-import { propsWithValues, snakeCase } from "./utils"
+import { isTemplateStrings, propsWithValues, snakeCase, toStr } from "./utils"
 import { Meta } from "./meta"
 
 export const DriverRequired = `Driver Implementation required, see: https://github.com/litdb/litdb`
@@ -141,8 +141,7 @@ export class SyncConnection extends ConnectionBase {
     }
 
     listTables() { 
-        let stmt = this.driver.prepareSync(this.driver.sqlTableNames())
-        const ret = stmt.arraysSync().map(x => x[0] as string)
+        const ret = this.column({ sql: this.driver.sqlTableNames() })
         return ret
     }
 
@@ -156,58 +155,76 @@ export class SyncConnection extends ConnectionBase {
         return stmt.execSync()
     }
 
-    statment<T>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) 
+    prepare<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
         : [Statement<T,DbBinding[]>|Statement<T,any>, any[]|Record<string,any>]
     {
-        if (typeof strings == "object" && "build" in strings) {
-            let query = strings.build()
-            let stmt = this.driver.prepare<T,any>(query.sql)
-            return [stmt, query.params]
-        } else {
+        if (isTemplateStrings(strings)) {
             let stmt = this.driver.prepare<T,DbBinding[]>(strings, ...params)
             return [stmt, params]
+        } else if (typeof strings == "object") {
+            if ("build" in strings) {
+                let query = strings.build()
+                let stmt = this.driver.prepare<T,any>(query.sql)
+                return [stmt, query.params]
+            } else if ("sql" in strings) {
+                let stmt = this.driver.prepare<T,any>(strings.sql)
+                return [stmt, (strings as any).params ?? {}]
+            }
         }
-    }
-    statmentSync<T>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) 
-        : [SyncStatement<T,DbBinding[]>|SyncStatement<T,any>, any[]|Record<string,any>]
-    {
-        if (typeof strings == "object" && "build" in strings) {
-            let query = strings.build()
-            let stmt = this.driver.prepareSync<T,any>(query.sql)
-            return [stmt, query.params]
-        } else {
-            let stmt = this.driver.prepareSync<T,DbBinding[]>(strings, ...params)
-            return [stmt, params]
-        }
+        throw new Error(`Invalid argument: ${toStr(strings)}`)
     }
 
-    all<ReturnType>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) {
-        const [stmt, p] = this.statmentSync<ReturnType>(strings, ...params)
+    prepareSync<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
+        : [SyncStatement<T,DbBinding[]>|SyncStatement<T,any>, any[]|Record<string,any>]
+    {
+        if (isTemplateStrings(strings)) {
+            let stmt = this.driver.prepareSync<T,DbBinding[]>(strings, ...params)
+            return [stmt, params]
+        } else if (typeof strings == "object") {
+            if ("build" in strings) {
+                let query = strings.build()
+                let stmt = this.driver.prepareSync<T,any>(query.sql)
+                return [stmt, query.params]
+            } else if ("sql" in strings) {
+                let stmt = this.driver.prepareSync<T,any>(strings.sql)
+                return [stmt, (strings as any).params ?? {}]
+            }
+        }
+        throw new Error(`Invalid argument: ${toStr(strings)}`)
+    }
+
+    all<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        const [stmt, p] = this.prepareSync<ReturnType>(strings, ...params)
         return Array.isArray(p) ? stmt.allSync(...p) : stmt.allSync(p)
     }
 
-    one<ReturnType>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) {
-        const [stmt, p] = this.statmentSync<ReturnType>(strings, ...params)
+    one<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        const [stmt, p] = this.prepareSync<ReturnType>(strings, ...params)
         return Array.isArray(p) ? stmt.oneSync(...p) : stmt.oneSync(p)
     }
 
-    column<ReturnValue>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) {
-        const [stmt, p] = this.statmentSync<ReturnValue>(strings, ...params)
-        return Array.isArray(p) ? stmt.arraysSync(...p).map(x => x[0] as ReturnValue) : stmt.arraysSync(p)[0] as ReturnValue
+    column<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        const [stmt, p] = this.prepareSync<ReturnValue>(strings, ...params)
+        return Array.isArray(p) 
+            ? stmt.arraysSync(...p).map(x => x[0] as ReturnValue) 
+            : stmt.arraysSync(p).map(x => x[0] as ReturnValue) 
     }
 
-    value<ReturnValue>(strings: TemplateStringsArray | SqlBuilder, ...params: any[]) {
-        const [stmt, p] = this.statmentSync<ReturnValue>(strings, ...params)
+    value<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        const [stmt, p] = this.prepareSync<ReturnValue>(strings, ...params)
         return Array.isArray(p) ? stmt.valueSync(...p) : stmt.valueSync(p)
     }
 
-    exec(sql:string | SqlBuilder, params:Record<string,any>) {
+    exec(sql:string | SqlBuilder | Fragment, params:Record<string,any>) {
         if (!sql) throw new Error("query is required")
-        const query = typeof sql == "object" && "build" in sql
-            ? sql.build()
+        const query = typeof sql == "object" 
+            ? ("build" in sql 
+                ? sql.build()
+                : "sql" in sql ? sql : null)
             : { sql, params }
+        if (!query?.sql) throw new Error(`Invalid argument: ${toStr(sql)}`)
         let stmt = this.driver.prepareSync(query.sql)
-        return stmt.execSync(query.params)
+        return stmt.execSync(query.params ?? {})
     }
 }
 

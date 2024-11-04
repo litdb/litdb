@@ -14,7 +14,7 @@ describe('SQLite Driver Tests', () => {
         $.dump(pick(origRows, ['id','firstName','lastName','age']))
     })
 
-    it ('should be able to run a test', () => {
+    it ('can use templated string', () => {
         let getContact = (id:number) => 
             db.one<Contact>`select firstName, lastName from Contact where id = ${id}`
 
@@ -28,7 +28,7 @@ describe('SQLite Driver Tests', () => {
         expect(contact.lastName).toBe('Smith')
     })
 
-    it ('should generate Contact Table SQL', () => {
+    it ('does generate Contact Table SQL', () => {
 
         db.dropTable(Contact)
 
@@ -38,7 +38,6 @@ describe('SQLite Driver Tests', () => {
 
         expect(db.listTables()).toContain(Contact.name)
 
-        //console.log('contacts[0]', contacts[0])
         db.insert(contacts[0])
     })
 
