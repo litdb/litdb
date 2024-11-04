@@ -1,7 +1,9 @@
-import type { ColumnType, DialectTypes } from "../types"
+import type { ColumnType, DialectTypes, Driver } from "../types"
 import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
 import { MySqlDialect } from "./dialect"
+import { MySqlSchema } from "./schema"
+import { ConnectionBase } from "../connection"
 import { Schema } from "../schema"
 
 class MySqlTypes implements DialectTypes {
@@ -32,19 +34,23 @@ class MySqlTypes implements DialectTypes {
 
 export class MySql extends Sqlite
 {
-    static driver = new MySql()
-    static get schema() { return MySql.driver.schema }
-
-    static init() {
-        MySql.driver = new MySql()
-        return MySql.driver
+    static connection:ConnectionBase
+    static driver:Driver
+    static schema:Schema
+    static init() { 
+        const c = MySql.connection = new MySqlConnection(new MySql())
+        const { driver, schema } = c
+        Object.assign(MySql, { driver, schema })
+        return c
     }
 
     constructor() {
         super()
-        this.types = new MySqlTypes()
         this.dialect = new MySqlDialect()
         this.$ = this.dialect.$
-        this.schema = new Schema(this)
+        this.types = new MySqlTypes()
+        this.schema = new MySqlSchema(this)
     }
 }
+
+export class MySqlConnection extends ConnectionBase {}

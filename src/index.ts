@@ -1,14 +1,14 @@
 import type { 
-  ColumnDefinition, Driver, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, 
+  Driver, Connection, SyncConnection, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, ColumnDefinition, 
   TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType,
 } from "./types"
-import { Connection, ConnectionBase, DefaultStrategy, SnakeCaseStrategy, SyncConnection } from "./connection"
+import { DbConnection, SyncDbConnection, DefaultStrategy, SnakeCaseStrategy } from "./connection"
 import { WhereQuery, SelectQuery, UpdateQuery, DeleteQuery, } from "./sql.builders"
 import { Sql } from "./sql"
 import { Meta } from "./meta"
 import { Schema } from "./schema"
 import { Inspect } from "./inspect"
-import { pick, omit, toStr, mergeParams, nextParam, snakeCase } from "./utils"
+import { pick, omit, toStr, mergeParams, nextParam, snakeCase, isTemplateStrings } from "./utils"
 import { converterFor, DateTimeConverter } from "./converters"
 import { table, column, Table, DefaultValues, DataType, } from "./model"
 import { Sqlite } from "./sqlite/driver"
@@ -17,18 +17,23 @@ import { MySql } from "./mysql/driver"
 import { MySqlDialect } from "./mysql/dialect"
 import { PostgreSql } from "./postgres/driver"
 import { PostgreSqlDialect } from "./postgres/dialect"
+import { SqliteSchema } from "./sqlite/schema"
+import { MySqlSchema } from "./mysql/schema"
+import { PostgreSqlSchema } from "./postgres/schema"
 
-const sqlite = (() => { return Sqlite.init().$ })();
-const mysql = (() => { return MySql.init().$ })();
-const postgres = (() => { return PostgreSql.init().$ })();
+const sqlite = (() => { return Sqlite.init().$ })()
+const mysql = (() => { return MySql.init().$ })()
+const postgres = (() => { return PostgreSql.init().$ })()
 
 export { 
   Sql,
   Meta,
   Schema,
-  ConnectionBase,
-  Connection,
+  Driver,
+  Connection, 
   SyncConnection,
+  DbConnection,
+  SyncDbConnection,
   NamingStrategy,
   SqlBuilder,
   ReflectMeta,
@@ -42,16 +47,16 @@ export {
   UpdateQuery,
   DeleteQuery,
   Inspect,
-  converterFor,
   DateTimeConverter,
+  converterFor,
   table,
   column,
   Table,
   DefaultValues,
   DataType,
-  ColumnDefinition, Driver, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, TypeConverter,
-  Sqlite, SqliteDialect,         sqlite,
-  MySql, MySqlDialect,           mysql,
-  PostgreSql, PostgreSqlDialect, postgres,
-  pick, omit, toStr, mergeParams, nextParam, snakeCase,
+  ColumnDefinition, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, TypeConverter,
+  Sqlite, SqliteDialect, SqliteSchema,             sqlite,
+  MySql, MySqlDialect, MySqlSchema,                mysql,
+  PostgreSql, PostgreSqlDialect, PostgreSqlSchema, postgres,
+  pick, omit, toStr, mergeParams, nextParam, snakeCase, isTemplateStrings,
 }

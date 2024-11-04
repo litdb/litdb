@@ -1,19 +1,15 @@
 import type { 
-    Driver, DbBinding, ReflectMeta, ClassParam, ClassInstance, TableDefinition, 
-    Fragment, SqlBuilder, Statement, SyncStatement,
-    NamingStrategy,
+    DbBinding, ReflectMeta, ClassParam, ClassInstance, TableDefinition, 
+    Fragment, SqlBuilder, Statement, SyncStatement, NamingStrategy,
+    Driver,
+    SyncConnection,
+    Connection,
+    Dialect,
 } from "./types"
 import { Sql } from "./sql"
 import { isTemplateStrings, propsWithValues, snakeCase, toStr } from "./utils"
 import { Meta } from "./meta"
-
-export const DriverRequired = `Driver Implementation required, see: https://github.com/litdb/litdb`
-
-export const DriverRequiredProxy = new Proxy({}, {
-    get:(target: {}, key:string|symbol) => {
-        throw new Error(DriverRequired)
-    }
-})
+import { Schema, DriverRequired } from "./schema"
 
 type InsertOptions = { 
     /** only insert these props */
@@ -35,18 +31,26 @@ type DeleteOptions = {
     where?:Fragment|Fragment[]
 }
 
-export class ConnectionBase {
-    constructor(public driver:Driver, public $:ReturnType<typeof Sql.create>) {}
-    quote(symbol:string) { return this.$.quote(symbol) }
-}
+export class DbConnection {
+    driver:Driver
+    $:ReturnType<typeof Sql.create>
+    schema:Schema
 
-export class Connection extends ConnectionBase {
+    constructor(public connection:Connection & {
+        $:ReturnType<typeof Sql.create>
+    }) {
+        this.$ = connection.$
+        this.driver = connection.driver
+        this.schema = connection.driver.schema
+    }
+
     get sync() { 
-        if (this.driver.sync == null) {
+        if ((this.driver as any).sync == null) {
             throw new Error(`${this.$.name} does not support sync APIs`)
         }
-        return this.driver.sync
+        return (this.driver as any).sync as SyncDbConnection
     }
+
     quote(symbol:string) { return this.$.quote(symbol) }
     
     async insert<T extends ClassInstance>(row:T, options?:InsertOptions) {
@@ -70,24 +74,55 @@ export class Connection extends ConnectionBase {
     async one<ReturnType>(strings: TemplateStringsArray, ...params: any[]) {
         return Promise.resolve(this.sync.one<ReturnType>(strings, ...params))
     }
+
+    prepare<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
+        : [Statement<T,DbBinding[]>|Statement<T,any>, any[]|Record<string,any>]
+    {
+        if (isTemplateStrings(strings)) {
+            let stmt = this.connection.prepare<T,DbBinding[]>(strings, ...params)
+            return [stmt, params]
+        } else if (typeof strings == "object") {
+            if ("build" in strings) {
+                let query = strings.build()
+                let stmt = this.connection.prepare<T,any>(query.sql)
+                return [stmt, query.params]
+            } else if ("sql" in strings) {
+                let stmt = this.connection.prepare<T,any>(strings.sql)
+                return [stmt, (strings as any).params ?? {}]
+            }
+        }
+        throw new Error(`Invalid argument: ${toStr(strings)}`)
+    }    
 }
 
-export class SyncConnection extends ConnectionBase {
+export class SyncDbConnection {
+    driver:Driver
+    $:ReturnType<typeof Sql.create>
+    schema:Schema
+
+    constructor(public connection:SyncConnection & {
+        $:ReturnType<typeof Sql.create>
+    }) {
+        this.$ = connection.$
+        this.driver = connection.driver
+        this.schema = connection.driver.schema
+    }
+
+    quote(symbol:string) { return this.$.quote(symbol) }
 
     insert<T extends ClassInstance>(row:T, options?:InsertOptions) {
         if (!row) return
         const cls = row.constructor as ReflectMeta
-        const schema = this.driver.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             const onlyProps = options?.onlyProps ?? propsWithValues(row)
             const onlyOptions = { onlyProps }
-            let stmt = this.driver.prepare<T,any>(schema.insert(cls, onlyOptions))
-            const dbRow = schema.toDbObject(row, onlyOptions)
-            return stmt.exec(dbRow)
+            let stmt = this.connection.prepareSync<T,any>(this.schema.insert(cls, onlyOptions))
+            const dbRow = this.schema.toDbObject(row, onlyOptions)
+            return stmt.execSync(dbRow)
         } else {
-            let stmt = this.driver.prepare<T,any>(schema.insert(cls))
-            const dbRow = schema.toDbObject(row)
-            return stmt.exec(dbRow)
+            let stmt = this.connection.prepareSync<T,any>(this.schema.insert(cls))
+            const dbRow = this.schema.toDbObject(row)
+            return stmt.execSync(dbRow)
         }
     }
 
@@ -95,17 +130,16 @@ export class SyncConnection extends ConnectionBase {
         if (rows.length == 0)
             return
         const cls = rows[0].constructor as ReflectMeta
-        const schema = this.driver.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             for (const row of rows) {
                 this.insert(row, options)
             }
         } else {
             let last = null
-            let stmt = this.driver.prepare<T,any>(schema.insert(cls))
+            let stmt = this.connection.prepareSync<T,any>(this.schema.insert(cls))
             for (const row of rows) {
-                const dbRow = schema.toDbObject(row)
-                last = stmt.exec(dbRow)
+                const dbRow = this.schema.toDbObject(row)
+                last = stmt.execSync(dbRow)
             }
             return last
         }
@@ -114,79 +148,57 @@ export class SyncConnection extends ConnectionBase {
     update<T extends ClassInstance>(row:T, options?:UpdateOptions) {
         if (!row) return
         const cls = row.constructor as ReflectMeta
-        const schema = this.driver.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             const onlyProps = options?.onlyProps ?? propsWithValues(row)
             const onlyOptions = { onlyProps }
-            let stmt = this.driver.prepare<T,any>(schema.update(cls, onlyOptions))
-            const dbRow = schema.toDbObject(row, onlyOptions)
-            return stmt.exec(dbRow)
+            let stmt = this.connection.prepareSync<T,any>(this.schema.update(cls, onlyOptions))
+            const dbRow = this.schema.toDbObject(row, onlyOptions)
+            return stmt.execSync(dbRow)
         } else {
-            let stmt = this.driver.prepare<T,any>(schema.update(cls))
-            const dbRow = schema.toDbObject(row)
-            return stmt.exec(dbRow)
+            let stmt = this.connection.prepareSync<T,any>(this.schema.update(cls))
+            const dbRow = this.schema.toDbObject(row)
+            return stmt.execSync(dbRow)
         }
     }
 
     delete<T extends ClassInstance>(row:T, options?:DeleteOptions) {
         if (!row) return
         const cls = row.constructor as ReflectMeta
-        const schema = this.driver.schema
-        let stmt = this.driver.prepare<T,any>(schema.delete(cls, options))
+        let stmt = this.connection.prepareSync<T,any>(this.schema.delete(cls, options))
         const meta = Meta.assertMeta(cls)
         const pkColumns = meta.props.filter(p => p.column?.primaryKey)
         const onlyProps = pkColumns.map(p => p.name)
-        const dbRow = schema.toDbObject(row, { onlyProps })
-        return stmt.exec(dbRow)
+        const dbRow = this.schema.toDbObject(row, { onlyProps })
+        return stmt.execSync(dbRow)
     }
 
     listTables() { 
-        const ret = this.column({ sql: this.driver.sqlTableNames() })
-        return ret
+        return this.column<string>({ sql: this.schema.sqlTableNames() })
     }
 
     dropTable<Table extends ClassParam>(table:Table) { 
-        let stmt = this.driver.prepareSync(this.driver.schema.dropTable(table) )
+        let stmt = this.connection.prepareSync(this.schema.dropTable(table) )
         return stmt.execSync()
     }
 
     createTable<Table extends ClassParam>(table:Table) {
-        let stmt = this.driver.prepareSync(this.driver.schema.createTable(table))
+        let stmt = this.connection.prepareSync(this.schema.createTable(table))
         return stmt.execSync()
-    }
-
-    prepare<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
-        : [Statement<T,DbBinding[]>|Statement<T,any>, any[]|Record<string,any>]
-    {
-        if (isTemplateStrings(strings)) {
-            let stmt = this.driver.prepare<T,DbBinding[]>(strings, ...params)
-            return [stmt, params]
-        } else if (typeof strings == "object") {
-            if ("build" in strings) {
-                let query = strings.build()
-                let stmt = this.driver.prepare<T,any>(query.sql)
-                return [stmt, query.params]
-            } else if ("sql" in strings) {
-                let stmt = this.driver.prepare<T,any>(strings.sql)
-                return [stmt, (strings as any).params ?? {}]
-            }
-        }
-        throw new Error(`Invalid argument: ${toStr(strings)}`)
     }
 
     prepareSync<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
         : [SyncStatement<T,DbBinding[]>|SyncStatement<T,any>, any[]|Record<string,any>]
     {
         if (isTemplateStrings(strings)) {
-            let stmt = this.driver.prepareSync<T,DbBinding[]>(strings, ...params)
+            let stmt = this.connection.prepareSync<T,DbBinding[]>(strings, ...params)
             return [stmt, params]
         } else if (typeof strings == "object") {
             if ("build" in strings) {
                 let query = strings.build()
-                let stmt = this.driver.prepareSync<T,any>(query.sql)
+                let stmt = this.connection.prepareSync<T,any>(query.sql)
                 return [stmt, query.params]
             } else if ("sql" in strings) {
-                let stmt = this.driver.prepareSync<T,any>(strings.sql)
+                let stmt = this.connection.prepareSync<T,any>(strings.sql)
                 return [stmt, (strings as any).params ?? {}]
             }
         }
@@ -223,8 +235,36 @@ export class SyncConnection extends ConnectionBase {
                 : "sql" in sql ? sql : null)
             : { sql, params }
         if (!query?.sql) throw new Error(`Invalid argument: ${toStr(sql)}`)
-        let stmt = this.driver.prepareSync(query.sql)
+        let stmt = this.connection.prepareSync(query.sql)
         return stmt.execSync(query.params ?? {})
+    }
+}
+
+export class ConnectionBase {
+    $:ReturnType<typeof Sql.create>
+    async: DbConnection
+    sync: SyncDbConnection
+    schema: Schema
+    dialect: Dialect
+
+    constructor(public driver:Driver & {
+        $:ReturnType<typeof Sql.create>
+    }) {
+        this.$ = driver.$
+        this.schema = driver.schema
+        this.dialect = driver.dialect
+        this.async = new DbConnection(this)
+        this.sync = new SyncDbConnection(this)
+    }
+
+    prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+        throw new Error(DriverRequired)
+    }
+
+    prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+        throw new Error(DriverRequired)
     }
 }
 

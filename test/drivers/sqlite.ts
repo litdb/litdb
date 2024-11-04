@@ -1,12 +1,12 @@
 import { Database, Statement as BunStatement } from "bun:sqlite"
 import type { 
-    ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,     
+    ColumnDefinition, Driver, Connection, SyncConnection, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,     
 } from "../../src"
 import { 
-    Sql, Connection, NamingStrategy, SyncConnection, DataType, DefaultValues, converterFor, DateTimeConverter, 
-    DialectTypes, SqliteDialect, DefaultStrategy, Schema,
+    Sql, DbConnection, NamingStrategy, SyncDbConnection, DataType, DefaultValues, converterFor, DateTimeConverter, 
+    DialectTypes, SqliteDialect, DefaultStrategy, Schema, isTemplateStrings,
+    SqliteSchema,
 } from "../../src"
-import { isTemplateStrings } from "../../src/utils"
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
 
@@ -57,7 +57,7 @@ export function connect(options?:ConnectionOptions|string) {
             strict: true 
         })
         db.exec(ENABLE_WAL)
-        return new Sqlite(db)
+        return new SqliteConnection(db, new Sqlite())
     }
 
     options = options || {}
@@ -68,7 +68,7 @@ export function connect(options?:ConnectionOptions|string) {
     if (options?.wal === false) {
         db.exec(ENABLE_WAL)
     }
-    return new Sqlite(db)
+    return new SqliteConnection(db, new Sqlite())
 }
 
 class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
@@ -158,8 +158,6 @@ export class SqliteTypes implements DialectTypes {
 
 class Sqlite implements Driver
 {
-    async: Connection
-    sync: SyncConnection
     name: string
     dialect:Dialect
     schema:Schema
@@ -178,13 +176,11 @@ class Sqlite implements Driver
         ...converterFor(DateTimeConverter.instance, DataType.DATE, DataType.DATETIME, DataType.TIMESTAMP, DataType.TIMESTAMPZ),
     }
 
-    constructor(public db:Database) {
+    constructor() {
         this.dialect = new SqliteDialect()
         this.$ = this.dialect.$
         this.name = this.constructor.name
-        this.async = new Connection(this, this.$)
-        this.sync = new SyncConnection(this, this.$)
-        this.schema = new Schema(this)
+        this.schema = new SqliteSchema(this)
         this.types = new SqliteTypes()
     }
 
@@ -244,10 +240,25 @@ class Sqlite implements Driver
             : this.$.fragment(`LIMIT $limit`, { limit })
         return frag
     }
+}
 
-    /**
-     * Prepare a parameterized statement and return an async Statement
-     */
+class SqliteConnection implements Connection, SyncConnection {
+    $:ReturnType<typeof Sql.create>
+    async: DbConnection
+    sync: SyncDbConnection
+    schema: Schema
+    dialect: Dialect
+
+    constructor(public db:Database, public driver:Driver & {
+        $:ReturnType<typeof Sql.create>
+    }) {
+        this.$ = driver.$
+        this.schema = driver.schema
+        this.dialect = driver.dialect
+        this.async = new DbConnection(this)
+        this.sync = new SyncDbConnection(this)
+    }
+
     prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         if (isTemplateStrings(sql)) {
@@ -264,9 +275,6 @@ class Sqlite implements Driver
         }
     }
 
-    /**
-     * Prepare a parameterized statement and return a sync Statement
-     */
     prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         if (isTemplateStrings(sql)) {

@@ -4,7 +4,7 @@ import type {
     JoinDefinition, JoinParams, JoinType, 
 } from "./types"
 import { Meta } from "./meta"
-import { Schema } from "./schema"
+import { assertSql } from "./schema"
 import { Sql } from "./sql"
 import { asRef, asType, leftPart, nextParam, toStr } from "./utils"
 import { alignRight } from "./inspect"
@@ -155,7 +155,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
                 : options.on
         } else if (typeof options.on == 'function') {
             const refs = q.refs.slice(-2).concat([q.ref])
-            const sql = Schema.assertSql(options.on.call(q, ...refs))
+            const sql = assertSql(options.on.call(q, ...refs))
             on = qProtected.mergeParams(sql)
         }
         qProtected._joins.push({ type:options.type, table, on, params:options.params })
@@ -233,7 +233,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         } else if (Array.isArray(options)) {
             return this.condition('AND', { sql: this.$(options as TemplateStringsArray, ...params) }) 
         } else if (typeof options == 'function') {
-            const sql = Schema.assertSql(options.call(this, ...this.refs))
+            const sql = assertSql(options.call(this, ...this.refs))
             return this.condition('AND', { sql })
         } else {
             return this.condition('AND', options as WhereOptions) 
@@ -247,7 +247,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         } else if (Array.isArray(options)) {
             return this.condition('OR', { sql: this.$(options as TemplateStringsArray, ...params) }) 
         } else if (typeof options == 'function') {
-            const sql = Schema.assertSql(options.call(this, ...this.refs))
+            const sql = assertSql(options.call(this, ...this.refs))
             return this.condition('OR', { sql })
         } else {
             return this.condition('OR', options as WhereOptions) 
@@ -447,10 +447,10 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (typeof options == 'object') {
             const frag = typeof (options as any).build == 'function' 
                 ? (options as any).build(this.refs)
-                : Schema.assertSql(options)
+                : assertSql(options)
             this._groupBy.push(this.mergeParams(frag))
         } else if (typeof options == 'function') {
-            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            const frag = assertSql(options.call(this, ...this.refs))
             this._groupBy.push(this.mergeParams(frag))
         } else throw new Error(`Invalid Argument: ${typeof options}`)
         return this
@@ -465,10 +465,10 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (typeof options == 'object') {
             const frag = typeof (options as any).build == 'function' 
                 ? (options as any).build(this.refs)
-                : Schema.assertSql(options)
+                : assertSql(options)
             this._having.push(this.mergeParams(frag))
         } else if (typeof options == 'function') {
-            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            const frag = assertSql(options.call(this, ...this.refs))
             this._having.push(this.mergeParams(frag))
         } else throw new Error(`Invalid Argument: ${typeof options}`)
         return this
@@ -483,10 +483,10 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (typeof options == 'object') {
             const frag = typeof (options as any).build == 'function' 
                 ? (options as any).build(this.refs)
-                : Schema.assertSql(options)
+                : assertSql(options)
             this._orderBy.push(this.mergeParams(frag))
         } else if (typeof options == 'function') {
-            const frag = Schema.assertSql(options.call(this, ...this.refs))
+            const frag = assertSql(options.call(this, ...this.refs))
             this._orderBy.push(this.mergeParams(frag))
         } else throw new Error(`Invalid Argument: ${typeof options}`)
         return this
@@ -525,7 +525,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
                 }
             }
         } else if (typeof options == 'function') {
-            const sql = Schema.assertSql(options.call(this, ...this.refs))
+            const sql = assertSql(options.call(this, ...this.refs))
             this._select.push(this.mergeParams(sql))
         } else throw new Error(`Invalid select(${typeof options})`)
         return this

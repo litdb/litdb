@@ -1,7 +1,9 @@
-import type { ColumnType, DialectTypes } from "../types"
+import type { ColumnType, DialectTypes, Driver } from "../types"
 import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
 import { PostgreSqlDialect } from "./dialect"
+import { PostgreSqlSchema } from "./schema"
+import { ConnectionBase } from "../connection"
 import { Schema } from "../schema"
 
 class PostgreSqlTypes implements DialectTypes {
@@ -23,19 +25,23 @@ class PostgreSqlTypes implements DialectTypes {
 
 export class PostgreSql extends Sqlite
 {
-    static driver = new PostgreSql()
-    static get schema() { return PostgreSql.driver.schema }
-
-    static init() {
-        PostgreSql.driver = new PostgreSql()
-        return PostgreSql.driver
+    static connection:ConnectionBase
+    static driver:Driver
+    static schema:Schema
+    static init() { 
+        const c = PostgreSql.connection = new PostgreSqlConnection(new PostgreSql())
+        const { driver, schema } = c
+        Object.assign(PostgreSql, { driver, schema })
+        return c
     }
 
     constructor() {
         super()
-        this.types = new PostgreSqlTypes()
         this.dialect = new PostgreSqlDialect()
         this.$ = this.dialect.$
-        this.schema = new Schema(this)
+        this.types = new PostgreSqlTypes()
+        this.schema = new PostgreSqlSchema(this)
     }
 }
+
+export class PostgreSqlConnection extends ConnectionBase {}

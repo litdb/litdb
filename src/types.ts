@@ -1,9 +1,7 @@
-import { Connection, SyncConnection } from "./connection";
-import { Schema } from "./schema";
+import { Schema } from "./schema"
 
-export type ConstructorsToRefs<T extends Constructor<any>[]> = {
-    [K in keyof T]: TypeRef<InstanceType<T[K]>>
-}
+export type Constructor<T = any> = new (...args: any[]) => T
+export type ConstructorWithParams<T, P extends any[]> = new (...args: P) => T
 
 export type First<T extends readonly any[]> = T extends [infer F, ...any[]] 
     ? F extends Constructor<any> 
@@ -22,6 +20,11 @@ export type LastN<T extends any[], N extends number> = T extends [...any[], ...i
     ? U 
     : never 
   : never
+
+// Helper type to convert tuple of constructors to tuple of instances
+export type ConstructorToInstances<T> = {
+    [K in keyof T]: T[K] extends Constructor<infer U> ? U : never;
+}
 
 export type Params = Record<string, any> | any[];
 
@@ -63,16 +66,25 @@ export type DialectTypes = {
     map:    Record<string,ColumnType[]>
 }
 
-export type Constructor<T = any> = new (...args: any[]) => T
-export type ConstructorWithParams<T, P extends any[]> = new (...args: P) => T
-
-// Helper type to convert tuple of constructors to tuple of instances
-export type ConstructorToInstances<T> = {
-    [K in keyof T]: T[K] extends Constructor<infer U> ? U : never;
-};
-
 export type ClassParam = ReflectMeta | { constructor:ReflectMeta } | Constructor<any>
 export type ClassInstance = { constructor:ReflectMeta } & Record<string, any> | Record<string, any>
+
+
+export type TypeRef<T> = T & { $ref: { cls:Constructor<T>, as?:string } }
+
+export type ConstructorToTypeRef<T extends readonly any[]> = {
+    [K in keyof T]: T[K] extends new (...args: any[]) => infer R 
+        ? TypeRef<R>
+        : never;
+}
+
+export type ConstructorsToRefs<T extends Constructor<any>[]> = {
+    [K in keyof T]: TypeRef<InstanceType<T[K]>>
+}
+
+export type TypeRefs<Tables extends Constructor<any>[]> = {
+    [K in keyof Tables]: TypeRef<InstanceType<Tables[K]>>
+}
 
 export interface TableDefinition {
     name: string
@@ -115,21 +127,15 @@ export interface SyncStatement<ReturnType, ParamsType extends DbBinding[]> {
     runSync(...params: ParamsType): void
 }
 
-export interface NamingStrategy {
-    tableName(table:string) : string
-    columnName(column:string) : string
-    tableFromDef(def:TableDefinition) : string
-}
-
 export interface TypeConverter {
     toDb(value: any): any;
     fromDb(value: any): any;
 }
 
-export interface DbRow {
-    table: string
-    keys: string[]
-    values: { [key: string]: any }
+export interface NamingStrategy {
+    tableName(table:string) : string
+    columnName(column:string) : string
+    tableFromDef(def:TableDefinition) : string
 }
 
 // Minimum interface required to use QueryBuilder
@@ -150,30 +156,31 @@ export interface Dialect {
 
 export interface Driver
 {
-    get name(): string
-
     get dialect(): Dialect
-    
+
     get schema(): Schema
-    
-    get async(): Connection
-    
-    get sync(): SyncConnection | undefined
 
     get converters(): { [key: string]: TypeConverter }
-
-    sqlTableNames(schema?: string): string
-
-    sqlColumnDefinition(column: ColumnDefinition): string
-
-    sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition): string
-
+}
+    
+export interface Connection {
+    driver:Driver
+    /**
+     * Prepare a parameterized statement and return an async Statement
+     */
     prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
+}
+
+export interface SyncConnection {
+    driver:Driver
+    /**
+     * Prepare a parameterized statement and return a sync Statement
+     */
     prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 }
-    
+
 export type Fragment = { sql:string, params?:Record<string,any> }
 
 export interface SqlBuilder {
@@ -198,23 +205,7 @@ export type WhereOptions = {
     params?:     Record<string,any>
 }
 
-export type GroupByOptions = {
-
-}
-
-export type TypeRef<T> = T & { $ref: { cls:Constructor<T>, as?:string } }
-
-export type ConstructorToTypeRef<T extends readonly any[]> = {
-    [K in keyof T]: T[K] extends new (...args: any[]) => infer R 
-        ? TypeRef<R>
-        : never;
-}
-
 export type JoinType = "JOIN" | "INNER JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" | "FULL JOIN" | "CROSS JOIN"
-
-export type TypeRefs<Tables extends Constructor<any>[]> = {
-    [K in keyof Tables]: TypeRef<InstanceType<Tables[K]>>
-}
 
 export type JoinParams = { 
     on?:string | ((...params:any[]) => Fragment),
