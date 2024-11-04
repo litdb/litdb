@@ -3,7 +3,6 @@ import type {
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta } from "./meta"
-import { Schema } from "./schema"
 import { asRef, asType, mergeParams } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
@@ -42,7 +41,7 @@ export class Sql
                         sb += value.description ?? ''
                     } else if (typeof value == 'object' && value.$ref) {
                         // if referencing proxy itself, return its quoted tableName
-                        sb += dialect.quoteTable(Schema.assertMeta(value.$ref.cls).tableName)
+                        sb += dialect.quoteTable(Meta.assertMeta(value.$ref.cls).tableName)
                     } else if (typeof value == 'object' && typeof value.build == 'function') {
                         // Merge params of SqlBuilder and append SQL
                         const frag = (value as SqlBuilder).build()
@@ -74,7 +73,7 @@ export class Sql
             return dialect.quoteColumn(p.name)
         }
         $.ref = function<Table extends Constructor<any>>(cls:Table, as?:string) : TypeRef<InstanceType<Table>> {
-            const meta = Schema.assertMeta(cls)
+            const meta = Meta.assertMeta(cls)
             if (as == null)
                 as = dialect.quoteTable(meta.tableName)
             const get = (target: { prefix:string, meta:Meta }, key:string|symbol) => key == '$ref' 
@@ -93,13 +92,13 @@ export class Sql
         $.from = function<Table extends Constructor<any>>(table:Table | TypeRef<InstanceType<Table>>, alias?:string) {
             const cls = asType(table)
             const ref = asRef(table) ?? $.ref(table, alias ?? '')
-            return new SelectQuery<[Table]>($, [cls], [Schema.assertMeta(cls)], [ref])
+            return new SelectQuery<[Table]>($, [cls], [Meta.assertMeta(cls)], [ref])
         }
         $.update = function<Table extends Constructor<any>>(table:Table) { 
-            return new UpdateQuery<[Table]>($, [table], [Schema.assertMeta(table)], [$.ref(table,'')]) 
+            return new UpdateQuery<[Table]>($, [table], [Meta.assertMeta(table)], [$.ref(table,'')]) 
         }
         $.deleteFrom = function<Table extends Constructor<any>>(table:Table) { 
-            return new DeleteQuery<[Table]>($, [table], [Schema.assertMeta(table)], [$.ref(table,'')]) 
+            return new DeleteQuery<[Table]>($, [table], [Meta.assertMeta(table)], [$.ref(table,'')]) 
         }
     
         $.join = function<Tables extends Constructor<any>[]>(...tables:Tables) {

@@ -98,7 +98,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     protected createInstance<NewTable extends Constructor<any>>(
         table: NewTable, ref?:TypeRef<InstanceType<NewTable>>
     ) : This<typeof this, [...Tables, NewTable]> {
-        const meta = Schema.assertMeta(table)
+        const meta = Meta.assertMeta(table)
         ref = ref ?? this.$.ref(table)
         
         return new (this.constructor as any)(

@@ -1,10 +1,10 @@
 import { Database, Statement as BunStatement } from "bun:sqlite"
 import type { 
-    ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect 
+    ColumnDefinition, Driver, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,     
 } from "../../src"
 import { 
     Sql, Connection, NamingStrategy, SyncConnection, DataType, DefaultValues, converterFor, DateTimeConverter, 
-    DialectTypes, SqliteDialect, DefaultStrategy,
+    DialectTypes, SqliteDialect, DefaultStrategy, Schema,
 } from "../../src"
 import { isTemplateStrings } from "../../src/utils"
 
@@ -162,6 +162,7 @@ class Sqlite implements Driver
     sync: SyncConnection
     name: string
     dialect:Dialect
+    schema:Schema
     $:ReturnType<typeof Sql.create>
     strategy:NamingStrategy = new DefaultStrategy()
     variables: { [key: string]: string } = {
@@ -183,6 +184,7 @@ class Sqlite implements Driver
         this.name = this.constructor.name
         this.async = new Connection(this, this.$)
         this.sync = new SyncConnection(this, this.$)
+        this.schema = new Schema(this)
         this.types = new SqliteTypes()
     }
 

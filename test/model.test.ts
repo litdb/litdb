@@ -1,23 +1,25 @@
 import { describe, it, expect } from 'bun:test'
 import type { ReflectMeta } from '../src'
-import { Sqlite, DataType, Schema } from '../src'
+import { Sqlite, DataType, Meta } from '../src'
 import { Contact } from './data'
+
+const schema = Sqlite.schema
 
 describe ('SQLite Create Table Tests', () => {
 
     it ('does get Contact meta', () => {
         //console.log('Contact', Contact, Contact.name, Contact.constructor, Contact.constructor.name)
-        const meta = Schema.assertMeta(Contact)
+        const meta = Meta.assertMeta(Contact)
         expect(meta).toBeDefined()
     })
 
     it ('does generate DROP Contact Table', () => {
-        const sql = Schema.dropTable(Contact, Sqlite.driver)
+        const sql = schema.dropTable(Contact)
         expect(sql).toContain('DROP TABLE IF EXISTS "Contact"')
     })
 
     it ('does generate CREATE Contact Table', () => {
-        const sql = Schema.createTable(Contact, Sqlite.driver)
+        const sql = schema.createTable(Contact)
         expect(sql).toContain('CREATE TABLE "Contact"')
         expect(sql).toContain('"id" INTEGER PRIMARY KEY AUTOINCREMENT')
         expect(sql).toContain('"firstName" TEXT NOT NULL')
@@ -32,7 +34,7 @@ describe ('SQLite Create Table Tests', () => {
     })
 
     it ('does generate INSERT Contact', () => {
-        const sql = Schema.insert(Contact, Sqlite.driver)
+        const sql = schema.insert(Contact)
         expect(sql).toContain('INSERT INTO "Contact" ' + 
             '("firstName", "lastName", "age", "email", "phone", "address", "city", "state", "postCode", "createdAt", "updatedAt")' + 
             ' VALUES ($firstName, $lastName, $age, $email, $phone, $address, $city, $state, $postCode, $createdAt, $updatedAt)')
@@ -40,12 +42,12 @@ describe ('SQLite Create Table Tests', () => {
 
     it ('does generate INSERT Contact onlyFields', () => {
         const onlyProps = ['firstName', 'lastName', 'email']
-        const sql = Schema.insert(Contact, Sqlite.driver, { onlyProps })
+        const sql = schema.insert(Contact, { onlyProps })
         expect(sql).toContain('INSERT INTO "Contact" ("firstName", "lastName", "email") VALUES ($firstName, $lastName, $email)')
     })
 
     it ('does generate UPDATE Contact', () => {
-        const sql = Schema.update(Contact, Sqlite.driver)
+        const sql = schema.update(Contact)
         expect(sql).toContain('UPDATE "Contact" SET "firstName"=$firstName, "lastName"=$lastName, "age"=$age, ' + 
             '"email"=$email, "phone"=$phone, "address"=$address, "city"=$city, "state"=$state, "postCode"=$postCode, ' + 
             '"createdAt"=$createdAt, "updatedAt"=$updatedAt WHERE "id" = $id')

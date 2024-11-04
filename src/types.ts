@@ -1,4 +1,5 @@
 import { Connection, SyncConnection } from "./connection";
+import { Schema } from "./schema";
 
 export type ConstructorsToRefs<T extends Constructor<any>[]> = {
     [K in keyof T]: TypeRef<InstanceType<T[K]>>
@@ -153,6 +154,8 @@ export interface Driver
 
     get dialect(): Dialect
     
+    get schema(): Schema
+    
     get async(): Connection
     
     get sync(): SyncConnection | undefined
@@ -169,11 +172,6 @@ export interface Driver
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
     prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
-
-    // prepareTemplate<ReturnType, ParamsType extends DbBinding[]>(strings: TemplateStringsArray, ...params: DbBinding[])
-    //     : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
-    // prepareTemplateSync<ReturnType, ParamsType extends DbBinding[]>(strings: TemplateStringsArray, ...params: DbBinding[])
-    //     : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 }
     
 export type Fragment = { sql:string, params?:Record<string,any> }

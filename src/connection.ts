@@ -5,7 +5,7 @@ import type {
 } from "./types"
 import { Sql } from "./sql"
 import { propsWithValues, snakeCase } from "./utils"
-import { Schema } from "./schema"
+import { Meta } from "./meta"
 
 export const DriverRequired = `Driver Implementation required, see: https://github.com/litdb/litdb`
 
@@ -77,15 +77,16 @@ export class SyncConnection extends ConnectionBase {
     insert<T extends ClassInstance>(row:T, options?:InsertOptions) {
         if (!row) return
         const cls = row.constructor as ReflectMeta
+        const schema = this.driver.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             const onlyProps = options?.onlyProps ?? propsWithValues(row)
             const onlyOptions = { onlyProps }
-            let stmt = this.driver.prepare<T,any>(Schema.insert(cls, this.driver, onlyOptions))
-            const dbRow = Schema.toDbObject(row, this.driver, onlyOptions)
+            let stmt = this.driver.prepare<T,any>(schema.insert(cls, onlyOptions))
+            const dbRow = schema.toDbObject(row, onlyOptions)
             return stmt.exec(dbRow)
         } else {
-            let stmt = this.driver.prepare<T,any>(Schema.insert(cls, this.driver))
-            const dbRow = Schema.toDbObject(row, this.driver)
+            let stmt = this.driver.prepare<T,any>(schema.insert(cls))
+            const dbRow = schema.toDbObject(row)
             return stmt.exec(dbRow)
         }
     }
@@ -94,15 +95,16 @@ export class SyncConnection extends ConnectionBase {
         if (rows.length == 0)
             return
         const cls = rows[0].constructor as ReflectMeta
+        const schema = this.driver.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             for (const row of rows) {
                 this.insert(row, options)
             }
         } else {
             let last = null
-            let stmt = this.driver.prepare<T,any>(Schema.insert(cls, this.driver))
+            let stmt = this.driver.prepare<T,any>(schema.insert(cls))
             for (const row of rows) {
-                const dbRow = Schema.toDbObject(row, this.driver)
+                const dbRow = schema.toDbObject(row)
                 last = stmt.exec(dbRow)
             }
             return last
@@ -112,15 +114,16 @@ export class SyncConnection extends ConnectionBase {
     update<T extends ClassInstance>(row:T, options?:UpdateOptions) {
         if (!row) return
         const cls = row.constructor as ReflectMeta
+        const schema = this.driver.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             const onlyProps = options?.onlyProps ?? propsWithValues(row)
             const onlyOptions = { onlyProps }
-            let stmt = this.driver.prepare<T,any>(Schema.update(cls, this.driver, onlyOptions))
-            const dbRow = Schema.toDbObject(row, this.driver, onlyOptions)
+            let stmt = this.driver.prepare<T,any>(schema.update(cls, onlyOptions))
+            const dbRow = schema.toDbObject(row, onlyOptions)
             return stmt.exec(dbRow)
         } else {
-            let stmt = this.driver.prepare<T,any>(Schema.update(cls, this.driver))
-            const dbRow = Schema.toDbObject(row, this.driver)
+            let stmt = this.driver.prepare<T,any>(schema.update(cls))
+            const dbRow = schema.toDbObject(row)
             return stmt.exec(dbRow)
         }
     }
@@ -128,11 +131,12 @@ export class SyncConnection extends ConnectionBase {
     delete<T extends ClassInstance>(row:T, options?:DeleteOptions) {
         if (!row) return
         const cls = row.constructor as ReflectMeta
-        let stmt = this.driver.prepare<T,any>(Schema.delete(cls, this.driver, options))
-        const meta = Schema.assertMeta(cls)
+        const schema = this.driver.schema
+        let stmt = this.driver.prepare<T,any>(schema.delete(cls, options))
+        const meta = Meta.assertMeta(cls)
         const pkColumns = meta.props.filter(p => p.column?.primaryKey)
         const onlyProps = pkColumns.map(p => p.name)
-        const dbRow = Schema.toDbObject(row, this.driver, { onlyProps })
+        const dbRow = schema.toDbObject(row, { onlyProps })
         return stmt.exec(dbRow)
     }
 
@@ -143,12 +147,12 @@ export class SyncConnection extends ConnectionBase {
     }
 
     dropTable<Table extends ClassParam>(table:Table) { 
-        let stmt = this.driver.prepareSync(Schema.dropTable(table, this.driver) )
+        let stmt = this.driver.prepareSync(this.driver.schema.dropTable(table) )
         return stmt.execSync()
     }
 
     createTable<Table extends ClassParam>(table:Table) {
-        let stmt = this.driver.prepareSync(Schema.createTable(table, this.driver))
+        let stmt = this.driver.prepareSync(this.driver.schema.createTable(table))
         return stmt.execSync()
     }
 

@@ -2,6 +2,7 @@ import type { ColumnType, DialectTypes } from "../types"
 import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
 import { PostgreSqlDialect } from "./dialect"
+import { Schema } from "../schema"
 
 class PostgreSqlTypes implements DialectTypes {
     // use as-is
@@ -23,6 +24,8 @@ class PostgreSqlTypes implements DialectTypes {
 export class PostgreSql extends Sqlite
 {
     static driver = new PostgreSql()
+    static get schema() { return PostgreSql.driver.schema }
+
     static init() {
         PostgreSql.driver = new PostgreSql()
         return PostgreSql.driver
@@ -33,5 +36,6 @@ export class PostgreSql extends Sqlite
         this.types = new PostgreSqlTypes()
         this.dialect = new PostgreSqlDialect()
         this.$ = this.dialect.$
+        this.schema = new Schema(this)
     }
 }

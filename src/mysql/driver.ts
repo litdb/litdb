@@ -2,6 +2,7 @@ import type { ColumnType, DialectTypes } from "../types"
 import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
 import { MySqlDialect } from "./dialect"
+import { Schema } from "../schema"
 
 class MySqlTypes implements DialectTypes {
     // use as-is
@@ -32,6 +33,8 @@ class MySqlTypes implements DialectTypes {
 export class MySql extends Sqlite
 {
     static driver = new MySql()
+    static get schema() { return MySql.driver.schema }
+
     static init() {
         MySql.driver = new MySql()
         return MySql.driver
@@ -42,5 +45,6 @@ export class MySql extends Sqlite
         this.types = new MySqlTypes()
         this.dialect = new MySqlDialect()
         this.$ = this.dialect.$
+        this.schema = new Schema(this)
     }
 }

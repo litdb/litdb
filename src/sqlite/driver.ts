@@ -8,6 +8,7 @@ import { converterFor, DateTimeConverter } from "../converters"
 import { DataType, DefaultValues } from "../model"
 import { Sql } from "../sql"
 import { SqliteDialect } from "./dialect"
+import { Schema } from "../schema"
 
 export class SqliteTypes implements DialectTypes {
     // use as-is
@@ -32,6 +33,8 @@ export class SqliteTypes implements DialectTypes {
 export class Sqlite implements Driver
 {
     static driver = new Sqlite()
+    static get schema() { return Sqlite.driver.schema }
+
     static init() {
         Sqlite.driver = new Sqlite()
         return Sqlite.driver
@@ -41,6 +44,7 @@ export class Sqlite implements Driver
     sync: SyncConnection
     name: string
     dialect:Dialect
+    schema:Schema
     $:ReturnType<typeof Sql.create>
     strategy:NamingStrategy = new DefaultStrategy()
     variables: { [key: string]: string } = {
@@ -59,6 +63,7 @@ export class Sqlite implements Driver
     constructor() {
         this.dialect = new SqliteDialect()
         this.$ = this.dialect.$
+        this.schema = new Schema(this)
         this.name = this.constructor.name
         this.async = new Connection(this, this.$)
         this.sync = new SyncConnection(this, this.$)
