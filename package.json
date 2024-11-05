@@ -1,7 +1,7 @@
 {
   "name": "litdb",
   "type": "module",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,7 +16,7 @@
     "minify": "uglifyjs dist/index.js --compress --mangle -o dist/index.min.js",
     "compress": "bun run minify && brotli ./dist/index.min.js",
     "prepublishOnly": "bun run build",
-    "release": "shx rm -rf ./dist && npm run build && npm run minify && bump patch --commit --push --tag && npm publish --access public",
+    "release": "shx rm -rf ./dist && bun run build && bun run minify && bump patch --commit --push --tag && npm publish --access public"
   },
   "files": [
     "dist"
