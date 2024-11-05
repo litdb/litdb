@@ -41,15 +41,14 @@ describe('SelectQuery API Tests', () => {
 
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(str(sql)).toContain(`FROM "Contact" WHERE a = $1 AND city = $2`)
-            expect(params).toEqual({ '1':id, '2':city })
+            expect(str(sql)).toContain(`FROM "Contact" WHERE a = $_1 AND city = $_2`)
+            expect(params).toEqual({ _1:id, _2:city })
         }
 
         assert($.from(Contact).where(c => $`a = ${id} AND city = ${city}`))
         assert($.from(Contact).where`a = ${id}`.and`city = ${city}`)
-        assert($.from(Contact).where( { sql:[$`a = ${id}`, $`city = ${city}`] }))
         assert($.from(Contact).where( { sql:$`a = ${id}` }).and({ sql:$`city = ${city}` }))
-        assert($.from(Contact).where( { rawSql:`a = $1 AND city = $2`, params: { [1]:id, [2]:city }  }))
+        assert($.from(Contact).where( { rawSql:`a = $_1 AND city = $_2`, params: { _1:id, _2:city }  }))
     })
 
 })

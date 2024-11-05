@@ -181,10 +181,11 @@ export interface SyncConnection {
         : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 }
 
-export type Fragment = { sql:string, params?:Record<string,any> }
+export type Fragment = { sql:string, params:Record<string,any> }
+export type IntoFragment<T> = Fragment & { into:T }
 
 export interface SqlBuilder {
-    build(): { sql:string, params:Record<string,any>, into?:Constructor<any> }
+    build(): Fragment
 }
 
 export type WhereOptions = { 
@@ -200,7 +201,7 @@ export type WhereOptions = {
     isNull?:     string[]
     notNull?:    string[]
     op?:         [string, Record<string,any>]
-    sql?:        Fragment|Fragment[] 
+    sql?:        Fragment
     rawSql?:     string|string[]
     params?:     Record<string,any>
 }

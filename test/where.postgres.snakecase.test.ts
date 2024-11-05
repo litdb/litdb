@@ -52,10 +52,10 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
             .toEqual({ firstName:'%oh%', city:'%usti%' })
 
         expect(str($.from(Contact).where({ in: { id:[10,20,30] } })))
-            .toContain(`WHERE ${qId} IN ($1,$2,$3)`)
+            .toContain(`WHERE ${qId} IN ($_1,$_2,$_3)`)
 
         expect(str($.from(Contact).where({ notIn: { id:[10,20,30] } })))
-            .toContain(`WHERE ${qId} NOT IN ($1,$2,$3)`)
+            .toContain(`WHERE ${qId} NOT IN ($_1,$_2,$_3)`)
 
         expect(str($.from(Contact).where({ isNull: Object.keys(search) })))
             .toContain(`WHERE ${qFirstName} IS NULL AND ${qAge} IS NULL AND ${qCity} IS NULL`)
@@ -99,10 +99,10 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
             .toEqual({ firstName:'%oh%', city:'%usti%' })
 
         expect(str($.from(Contact).where({ in: { id:[10,20,30] } })))
-            .toContain(`WHERE ${qId} IN ($1,$2,$3)`)
+            .toContain(`WHERE ${qId} IN ($_1,$_2,$_3)`)
 
         expect(str($.from(Contact).where({ notIn: { id:[10,20,30] } })))
-            .toContain(`WHERE ${qId} NOT IN ($1,$2,$3)`)
+            .toContain(`WHERE ${qId} NOT IN ($_1,$_2,$_3)`)
 
         expect(str($.from(Contact).where({ isNull: Object.keys(search) })))
             .toContain(`WHERE ${qFirstName} IS NULL AND ${qAge} IS NULL AND ${qCity} IS NULL`)
@@ -154,7 +154,7 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
         }
 
         expect(str($.from(Contact).where(c => $`${c.id} = ${id}`)))
-        .toContain(`FROM ${qContact} WHERE ${qId} = $1`)
+        .toContain(`FROM ${qContact} WHERE ${qId} = $_1`)
             
         assert($.from(Contact).where({ equals: { id } }))
         assert($.from(Contact).where({ op:  ['=',{ id }] }))
@@ -171,7 +171,7 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
         }
 
         expect(str($.from(Person).where(c => $`${c.key} = ${key}`)))
-            .toContain(`FROM ${qContact} WHERE ${qId} = $1`)
+            .toContain(`FROM ${qContact} WHERE ${qId} = $_1`)
 
         assert($.from(Person).where({ equals:  { key } }))
         assert($.from(Person).where({ op:  ['=',{ key }] }))
@@ -179,7 +179,7 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
         assert($.from(Person).where({ sql: { sql:`${qId} = $key`, params:{ key } } }))
 
         expect(str($.from(Person).where((p:Person) => $`${p.key} = ${key}`)))
-            .toBe(`SELECT ${selectPerson} FROM ${qContact} WHERE ${qId} = $1`)
+            .toBe(`SELECT ${selectPerson} FROM ${qContact} WHERE ${qId} = $_1`)
         // const p = sql.ref(Person,'p')
         // $.from(Person).where`${p.key} = ${key}`
     })
@@ -193,7 +193,7 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
         }
 
         expect(str($.from(DynamicPerson).where(c => $`${c.key} = ${key}`)))
-            .toContain(`FROM ${qContact} WHERE ${qId} = $1`)
+            .toContain(`FROM ${qContact} WHERE ${qId} = $_1`)
 
         assert($.from(DynamicPerson).where({ equals:  { key } }))
         assert($.from(DynamicPerson).where({ op:  ['=',{ key }] }))
@@ -212,12 +212,11 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
         }
 
         expect(str($.from(Contact).where(c => $`${c.id} = ${id} AND ${c.city} = ${city}`)))
-            .toContain(`FROM ${qContact} WHERE ${qId} = $1 AND ${qCity} = $2`)
+            .toContain(`FROM ${qContact} WHERE ${qId} = $_1 AND ${qCity} = $_2`)
 
         assert($.from(Contact).where({ equals: { id, city } }))
         assert($.from(Contact).where({ op:  ['=',{ id, city }] }))
         assert($.from(Contact).where({ sql: $(`${qId} = $id AND ${qCity} = $city`, { id, city }) }))
-        assert($.from(Contact).where({ sql: [ $(`${qId} = $id`, { id }), $(`${qCity} = $city`, { city }) ] }))
 
         assert($.from(Contact).where({ sql: $(`${qId} = $id AND ${qCity} = $city`, { id, city }) }))
     })
@@ -233,12 +232,11 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
         }
 
         expect(str($.from(Person).where(c => $`${c.key} = ${key} AND ${c.name} = ${name}`)))
-            .toContain(`FROM ${qContact} WHERE ${qId} = $1 AND ${qFirstName} = $2`)
+            .toContain(`FROM ${qContact} WHERE ${qId} = $_1 AND ${qFirstName} = $_2`)
 
         assert($.from(Person).where({ equals: { key, name } }))
         assert($.from(Person).where({ op:  ['=',{ key, name }] }))
         assert($.from(Person).where({ sql: $(`${qId} = $key AND ${qFirstName} = $name`, { key, name }) }))
-        assert($.from(Person).where({ sql: [ $(`${qId} = $key`, { key }), $(`${qFirstName} = $name`, { name }) ] }))
         assert($.from(Person).where({ sql: $(`${qId} = $key AND ${qFirstName} = $name`, { key, name }) }))
     })
 
@@ -246,8 +244,8 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
         const id = 1
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(str(sql)).toBe(`SELECT ${selectContact} FROM ${qContact} WHERE ${qId} = $1`)
-            expect(params['1']).toBe(id)
+            expect(str(sql)).toBe(`SELECT ${selectContact} FROM ${qContact} WHERE ${qId} = $_1`)
+            expect(params._1).toBe(id)
         }
 
         assert($.from(Contact).where(c => $`${c.id} = ${id}`))

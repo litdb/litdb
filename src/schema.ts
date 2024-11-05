@@ -83,7 +83,7 @@ export class Schema {
         const meta = Meta.assertMeta(table)
         let props = meta.props.filter(x => x.column!!)
         if (options?.onlyProps) {
-            props = props.filter(c => options.onlyProps!.includes(c.name))
+            props = props.filter(c => options.onlyProps!.includes(c.name) || c.column?.primaryKey)
         }
         const columns = props.map(x => x.column!)
         const setColumns = columns.filter(c => !c.primaryKey)

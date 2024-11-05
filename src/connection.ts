@@ -5,6 +5,8 @@ import type {
     SyncConnection,
     Connection,
     Dialect,
+    IntoFragment,
+    Constructor,
 } from "./types"
 import { Sql } from "./sql"
 import { isTemplateStrings, propsWithValues, snakeCase, toStr } from "./utils"
@@ -149,7 +151,8 @@ export class SyncDbConnection {
         if (!row) return
         const cls = row.constructor as ReflectMeta
         if (options?.onlyProps || options?.onlyWithValues) {
-            const onlyProps = options?.onlyProps ?? propsWithValues(row)
+            const pkNames = cls.$props.filter(x => x.column?.primaryKey).map(x => x.column!.name)
+            const onlyProps = Array.from(new Set([...(options?.onlyProps ?? propsWithValues(row)), ...pkNames ]))
             const onlyOptions = { onlyProps }
             let stmt = this.connection.prepareSync<T,any>(this.schema.update(cls, onlyOptions))
             const dbRow = this.schema.toDbObject(row, onlyOptions)
@@ -173,7 +176,7 @@ export class SyncDbConnection {
     }
 
     listTables() { 
-        return this.column<string>({ sql: this.schema.sqlTableNames() })
+        return this.column<string>({ sql: this.schema.sqlTableNames(), params:{} })
     }
 
     dropTable<Table extends ClassParam>(table:Table) { 
@@ -191,26 +194,30 @@ export class SyncDbConnection {
     {
         if (isTemplateStrings(strings)) {
             let stmt = this.connection.prepareSync<T,DbBinding[]>(strings, ...params)
+            // console.log('tpl', stmt, strings, params)
             return [stmt, params]
         } else if (typeof strings == "object") {
             if ("build" in strings) {
                 let query = strings.build()
                 let stmt = this.connection.prepareSync<T,any>(query.sql)
-                return [stmt, query.params]
+                // console.log('build', stmt, query.params)
+                return [stmt, query.params ?? {}]
             } else if ("sql" in strings) {
-                let stmt = this.connection.prepareSync<T,any>(strings.sql)
-                return [stmt, (strings as any).params ?? {}]
+                let sql = strings.sql
+                let params = (strings as any).params ?? {}
+                let stmt = this.connection.prepareSync<T,any>(sql)
+                return [stmt, params]
             }
         }
         throw new Error(`Invalid argument: ${toStr(strings)}`)
     }
 
-    all<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+    all<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<ReturnType>, ...params: any[]) {
         const [stmt, p] = this.prepareSync<ReturnType>(strings, ...params)
         return Array.isArray(p) ? stmt.allSync(...p) : stmt.allSync(p)
     }
 
-    one<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+    one<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<ReturnType>, ...params: any[]) {
         const [stmt, p] = this.prepareSync<ReturnType>(strings, ...params)
         return Array.isArray(p) ? stmt.oneSync(...p) : stmt.oneSync(p)
     }
@@ -278,4 +285,29 @@ export class SnakeCaseStrategy implements NamingStrategy {
     tableName(table:string) : string { return snakeCase(table) }
     columnName(column:string) : string { return snakeCase(column) }
     tableFromDef(def:TableDefinition) : string { return snakeCase(def.alias ?? def.name) }
+}
+
+
+export class FilterConnection implements SyncConnection {
+    $:ReturnType<typeof Sql.create>
+    orig:SyncConnection & { $:ReturnType<typeof Sql.create> }
+
+    constructor(public db:SyncDbConnection, 
+        public fn:(sql: TemplateStringsArray | string, params: DbBinding[]) => void) {
+        this.orig = db.connection
+        db.connection = this
+        this.$ = db.$
+    }
+
+    get driver() { return this.db.driver }
+    
+    prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql: TemplateStringsArray | string, ...params: DbBinding[])
+        : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+        this.fn(sql, params)
+        return this.orig.prepareSync(sql, ...params)
+    }
+
+    release() {
+        this.db.connection = this.orig
+    }
 }

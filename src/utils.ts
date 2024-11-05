@@ -81,17 +81,18 @@ export function toStr(value:any) {
 }
 
 export function nextParam(params:Record<string,any>) {
-    const positionalParams = Object.keys(params).map(x => parseInt(x)).filter(x => !isNaN(x))
-    return positionalParams.length == 0
+    const positionalParams = Object.keys(params)
+        .map(x => x[0] === '_' ? parseInt(x.substring(1)) : NaN).filter(x => !isNaN(x))
+    return '_' + (positionalParams.length == 0
         ? 1
-        : Math.max(...positionalParams) + 1
+        : Math.max(...positionalParams) + 1)
 }
 
 export function mergeParams(params:Record<string,any>, f:Fragment) {
     let sql = f.sql
     if (f.params && typeof f.params == 'object') {
         for (const [key, value] of Object.entries(f.params)) {
-            const exists = key in params && !isNaN(parseInt(key))
+            const exists = key in params && key[0] === '_' && !isNaN(parseInt(key.substring(1)))
             if (exists) {
                 const nextvalue = nextParam(params)
                 sql = sql.replaceAll(`$${key}`,`$${nextvalue}`)

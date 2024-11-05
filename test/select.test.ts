@@ -115,14 +115,14 @@ describe('SQLite SelectQuery Tests', () => {
         const freightId = 2
         const multiplier = 3
         assert($.from(Order).select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `COUNT("qty") * $1 as count`, { [1]:multiplier })
+            `COUNT("qty") * $_1 as count`, { _1:multiplier })
 
         assert($.from(Order)
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .and((o:Order) => $`${o.contactId} = ${contactId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT(\"qty\") * $3 as count FROM \"Order\" WHERE \"freightId\" = $1 AND \"contactId\" = $2`, 
-            { [1]:freightId, [2]:contactId, [3]:multiplier })
+            `SELECT COUNT(\"qty\") * $_3 as count FROM \"Order\" WHERE \"freightId\" = $_1 AND \"contactId\" = $_2`, 
+            { _1:freightId, _2:contactId, _3:multiplier })
 
         assert($.from(Order)
             .join(Contact, { 
@@ -130,8 +130,8 @@ describe('SQLite SelectQuery Tests', () => {
             })
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT("Order"."qty") * $3 as count FROM "Order" JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
-            { [1]:contactId, [2]:freightId, [3]:multiplier })
+            `SELECT COUNT("Order"."qty") * $_3 as count FROM "Order" JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $_1 WHERE "Order"."freightId" = $_2`, 
+            { _1:contactId, _2:freightId, _3:multiplier })
     })
 
     it ('Can query with just refs', () => {
@@ -174,10 +174,10 @@ describe('SQLite SelectQuery Tests', () => {
                 expectedSql, expectedParams)
 
         })(
-            'SELECT COUNT("Order"."qty") * $3 as count  FROM "Order"' 
+            'SELECT COUNT("Order"."qty") * $_3 as count  FROM "Order"' 
             + '  JOIN "Contact" ON "Order"."contactId" = "Contact"."id"' 
-            + ' WHERE "Contact"."id" = $1 AND "Order"."freightId" = $2',
-            { [1]:contactId, [2]:freightId, [3]:multiplier }
+            + ' WHERE "Contact"."id" = $_1 AND "Order"."freightId" = $_2',
+            { _1:contactId, _2:freightId, _3:multiplier }
         )
 
         assert($.from(Order)
@@ -186,7 +186,7 @@ describe('SQLite SelectQuery Tests', () => {
             })
             .where((o:Order) => $`${o.freightId} = ${freightId}`)
             .select((o:Order) => $`COUNT(${o.qty}) * ${multiplier} as count`), 
-            `SELECT COUNT("Order"."qty") * $3 as count  FROM "Order"  JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $1 WHERE "Order"."freightId" = $2`, 
-            { [1]:contactId, [2]:freightId, [3]:multiplier })
+            `SELECT COUNT("Order"."qty") * $_3 as count  FROM "Order"  JOIN "Contact" ON "Order"."contactId" = "Contact"."id" AND "Contact"."id" = $_1 WHERE "Order"."freightId" = $_2`, 
+            { _1:contactId, _2:freightId, _3:multiplier })
     })
 })

@@ -1,12 +1,13 @@
 import type { 
     Constructor, First, Last, Fragment, TypeRef, TypeRefs, WhereOptions, 
     GroupByBuilder, HavingBuilder, JoinBuilder, OrderByBuilder, SqlBuilder,
-    JoinDefinition, JoinParams, JoinType, 
+    JoinDefinition, JoinParams, JoinType,
+    IntoFragment, 
 } from "./types"
 import { Meta } from "./meta"
 import { assertSql } from "./schema"
 import { Sql } from "./sql"
-import { asRef, asType, leftPart, nextParam, toStr } from "./utils"
+import { asRef, asType, isTemplateStrings, leftPart, nextParam, toStr } from "./utils"
 import { alignRight } from "./inspect"
 
 type OnJoin<
@@ -230,7 +231,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         if (!options && params.length == 0) {
             this._where.length = 0
             return this
-        } else if (Array.isArray(options)) {
+        } else if (isTemplateStrings(options)) {
             return this.condition('AND', { sql: this.$(options as TemplateStringsArray, ...params) }) 
         } else if (typeof options == 'function') {
             const sql = assertSql(options.call(this, ...this.refs))
@@ -256,10 +257,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 
     condition(condition:"AND"|"OR", options:WhereOptions) {
         if (options.sql) {
-            const sql = Array.isArray(options.sql) ? options.sql : [options.sql]
-            for (const fragment of sql) {
-                this._where.push({ condition:condition, sql:this.mergeParams(fragment) })
-            }
+            this._where.push({ condition:condition, sql:this.mergeParams(options.sql) })
         }
         if (options.rawSql) {
             const sql = Array.isArray(options.rawSql) ? options.rawSql : [options.rawSql]
@@ -305,14 +303,11 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         let sql = f.sql
         if (f.params && typeof f.params == 'object') {
             for (const [key, value] of Object.entries(f.params)) {
-                const exists = key in this.params && !isNaN(parseInt(key))
+                const exists = key in this.params && key[0] === '_' && !isNaN(parseInt(key.substring(1)))
                 if (exists) {
-                    const positionalParams = Object.keys(this.params).map(x => parseInt(x)).filter(x => !isNaN(x))
-                    const nextParam = positionalParams.length == 0
-                        ? 1
-                        : Math.max(...positionalParams) + 1
-                    sql = sql.replaceAll(`$${key}`,`$${nextParam}`)
-                    this.params[nextParam] = value
+                    const nextvalue = nextParam(this.params)
+                    sql = sql.replaceAll(`$${key}`,`$${nextvalue}`)
+                    this.params[nextvalue] = value
                 } else {
                     this.params[key] = value
                 }
@@ -401,9 +396,16 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return sql
     }
 
+    into<T extends Constructor<any>>(into: T) : IntoFragment<InstanceType<T>> {
+        const { sql, params } = this.build()
+        return { sql, params, into }
+    }
+
     build() {
         const sql = this.buildWhere()
-        return { sql, params: this.params }
+        // console.log(`\n${sql}\n`)
+        const params = this.params
+        return { sql, params }
     }
 }
 
@@ -423,7 +425,6 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     protected _skip:number | undefined
     protected _take:number | undefined
     protected _limit?:string
-    protected _into: Constructor<any>|undefined
 
     copyInto(instance:SelectQuery<any>) {
         super.copyInto(instance)
@@ -432,7 +433,6 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         instance._having = Array.from(this._having)
         instance._skip = this._skip
         instance._take = this._take
-        instance._into = this._into
         return instance
     }
 
@@ -551,11 +551,6 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return this
     }
 
-    into<T extends Constructor<any>>(cls:T) {
-        this._into = cls
-        return this
-    }
-
     protected buildSelect() {
         //console.log('buildSelect', this._select)
         const sqlSelect = this._select.length > 0 
@@ -604,11 +599,8 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             + this.buildOrderBy()
             + this.buildLimit()
         // console.log(`\n${sql}\n`)
-        return { 
-            sql,
-            params: this.params, 
-            into: this._into ?? (this._select.length == 0 ? this.tables[0] : undefined) 
-        }
+        const params = this.params
+        return { sql, params }
     }
 }
 

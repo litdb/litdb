@@ -3,7 +3,7 @@ import type {
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta } from "./meta"
-import { asRef, asType, mergeParams } from "./utils"
+import { asRef, asType, isTemplateStrings, mergeParams } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
 
@@ -29,7 +29,8 @@ export class Sql
 
     public static create(dialect:Dialect) {
         function $(strings: TemplateStringsArray|string, ...params: any[]) : Fragment {
-            if (Array.isArray(strings)) {
+            if (isTemplateStrings(strings)) {
+                // console.log(`raw`, strings.raw, strings, params)
                 let sb = ''
                 const sqlParams:Record<string,any> = {}
                 for (let i = 0; i < strings.length; i++) {
@@ -52,7 +53,7 @@ export class Sql
                         sb += mergeParams(sqlParams, frag).replaceAll('\n', '\n      ')
                     } else if (value) {
                         const paramIndex = Object.keys(sqlParams).length + 1
-                        const name = `${paramIndex}`
+                        const name = `_${paramIndex}`
                         sb += `$${name}`
                         sqlParams[name] = value
                     }

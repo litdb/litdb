@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll } from 'bun:test'
 import { contacts, Contact } from './data'
 import { sync as db, $ } from './db'
-import { omit, pick } from '../src'
+import { FilterConnection, omit, pick, } from '../src'
+
 
 describe('SQLite Driver Tests', () => {
 
@@ -28,8 +29,9 @@ describe('SQLite Driver Tests', () => {
         expect(contact.lastName).toBe('Smith')
     })
 
-    it ('does generate Contact Table SQL', () => {
+    it ('does CRUD Contact Table', () => {
 
+        const sub = new FilterConnection(db, sql => console.log(sql))
         db.dropTable(Contact)
 
         expect(db.listTables()).not.toContain(Contact.name)
@@ -39,6 +41,26 @@ describe('SQLite Driver Tests', () => {
         expect(db.listTables()).toContain(Contact.name)
 
         db.insert(contacts[0])
+
+        expect(db.value($.from(Contact).select`COUNT(*)`)).toBe(1)
+
+        db.insertAll(contacts.slice(1))
+
+        expect(db.value($.from(Contact).select`COUNT(*)`)).toBe(contacts.length)
+
+        var updateContact = Object.assign(new Contact, contacts[0], { age:30 })
+        db.update(updateContact, { onlyProps:['age'] })
+
+        var dbContacts = db.all($.from(Contact).into(Contact))
+        $.dump(pick(dbContacts, ['id','firstName','lastName','age']))
+
+        const frag = $.from(Contact).where(c => $`${c.id} == ${updateContact.id}`).into(Contact)
+        // console.log('frag', frag)
+        const into = db.one(frag)!
+        expect(into.age).toBe(30)
+        // expect(into).toBeInstanceOf(Contact)
+
+        sub.release()
     })
 
 })
