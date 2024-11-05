@@ -617,32 +617,32 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
 
 export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
     private _set:string[] = []
-
-    set(options:{ sql?:Fragment|Fragment[], rawSql?:string|string[], values?:Record<string,any> }) {
+    set(options:TemplateStringsArray|Fragment|{ [K in keyof Partial<InstanceType<First<Tables>>>]: any }|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) {
         if (!options) {
             this._set.length = 0
-        } else if (options.sql) {
-            const sql = Array.isArray(options.sql) ? options.sql : [options.sql]
-            for (const fragment of sql) {
-                this._set.push(fragment.sql)
-                this.addParams(fragment.params)
+        } if (isTemplateStrings(options)) {
+            const frag = this.$(options as TemplateStringsArray, ...params)
+            this._set.push(this.mergeParams(frag))
+        } else if (typeof options == 'object') {
+            
+            if ("sql" in options) {
+                const frag = options.sql
+                this._set.push(frag.sql)
+                this.addParams(frag.params)
+            } else {
+                for (const [key, value] of Object.entries(options)) {
+                    const prop = this.meta.props.find(x => x.name === key)
+                    if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
+                    if (!prop.column) throw new Error(`Property ${key} is not a column`)
+                    this.params[prop.name] = value
+                    this._set.push(`${this.$.quote(prop.column.name)} = $${prop.name}`)
+                }
             }
+        } else if (typeof options == "function") {
+            const frag = assertSql(options.call(this, ...this.refs))
+            this._set.push(this.mergeParams(frag))
         }
-        if (options.rawSql) {
-            const sql = Array.isArray(options.rawSql) ? options.rawSql : [options.rawSql]
-            for (const fragment of sql) {
-                this._set.push(fragment)
-            }
-        }
-        if (options.values) {
-            for (const [key, value] of Object.entries(options.values)) {
-                const prop = this.meta.props.find(x => x.name === key)
-                if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
-                if (!prop.column) throw new Error(`Property ${key} is not a column`)
-                this.params[prop.name] = value
-                this._set.push(`${this.$.quote(prop.column.name)} = $${prop.name}`)
-            }
-        }
+        else throw new Error(`invalid argument: ${typeof options}`)
         return this
     }
 
@@ -659,7 +659,6 @@ export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         return { sql, params:this.params }
     }
 }
-
 
 export class DeleteQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> { 
 

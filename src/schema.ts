@@ -79,7 +79,7 @@ export class Schema {
         return sql
     }
 
-    update(table:ClassParam, options?:{ onlyProps?:string[], force?:boolean }) {
+    update(table:ClassParam, options?:{ onlyProps?:string[] }) {
         const meta = Meta.assertMeta(table)
         let props = meta.props.filter(x => x.column!!)
         if (options?.onlyProps) {
@@ -93,10 +93,10 @@ export class Schema {
         let sql = `UPDATE ${this.dialect.quoteTable(meta.tableName)} SET ${setSql}`
         if (whereSql) {
             sql += ` WHERE ${whereSql}`
-        } else if (!options?.force) {
-            throw new Error(`No WHERE clause exists for UPDATE ${meta.tableName}, force update with { force:true }`)
+        } else {
+            throw new Error(`No WHERE clause exists for UPDATE ${meta.tableName}`)
         }
-        console.log('Schema.update', sql)
+        // console.log('Schema.update', sql)
         return sql
     }
 
@@ -114,10 +114,10 @@ export class Schema {
         let sql = `DELETE FROM ${this.dialect.quoteTable(meta.tableName)}`
         if (whereSql) {
             sql += ` WHERE ${whereSql}`
-        } else if (!options?.force) {
-            throw new Error(`No WHERE clause exists for DELETE ${meta.tableName}, force delete with { force:true }`)
+        } else {
+            throw new Error(`No WHERE clause exists for DELETE ${meta.tableName}`)
         }
-        console.log('Schema.delete', sql)
+        // console.log('Schema.delete', sql)
         return sql
     }
 

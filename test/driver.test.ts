@@ -17,6 +17,7 @@ describe('SQLite Driver Tests', () => {
         $.dump(origRows)
         $.dump(omit(origRows, ['phone','createdAt','updatedAt']))
         $.dump(pick(origRows, ['id','firstName','lastName','age']))
+        $.dump(db.arrays($.from(Contact).select`id, firstName, lastName, age`))
     })
 
     it ('can use templated string', () => {
@@ -71,7 +72,9 @@ describe('SQLite Driver Tests', () => {
 
     it ('does CRUD Contact Table', () => {
 
-        const sub = useFilter(db, sql => console.log(sql))
+        const sub:any = null
+        // const sub = useFilter(db, sql => console.log(sql))
+        
         db.dropTable(Contact)
 
         expect(db.listTables()).not.toContain(Contact.name)
@@ -93,18 +96,33 @@ describe('SQLite Driver Tests', () => {
         expect(db.value($.from(Contact).select`COUNT(*)`)).toBe(contacts.length)
 
         var dbContacts = $.from(Contact).select({ props:['id','firstName','lastName','age'] }).into(Contact)
-        $.dump(db.all(dbContacts))
+        if (sub) $.dump(db.all(dbContacts))
 
-        var updateContact = Object.assign(new Contact, contacts[0], { age:40 })
+        var updateContact = contacts[0]
+        updateContact.age = 40
+        var { changes } = db.update(updateContact)
+        expect(changes).toBe(1)
         var { changes } = db.update(updateContact, { onlyProps:['age'] })
         expect(changes).toBe(1)
 
-        $.dump(db.all(dbContacts))
+        if (sub) $.dump(db.all(dbContacts))
 
         const q = $.from(Contact).where(c => $`${c.id} == ${updateContact.id}`).into(Contact)
-        // console.log('frag', frag)
         const one = db.one(q)!
         expect(one.age).toBe(40)
+
+        // named props
+        db.exec($.update(Contact).set({ age:41 }).where(c => $`${c.age} = 40`))
+        expect(db.value($.from(Contact).where(c => $`${c.age} = 41`).rowCount())).toBe(2)
+        
+        // function
+        db.exec($.update(Contact).set(c => $`${c.age} = ${42}`).where(c => $`${c.age} = 41`))
+        expect(db.value($.from(Contact).where(c => $`${c.age} = 42`).rowCount())).toBe(2)
+
+        // templated string
+        const qUpdate = $.update(Contact)
+        const c = qUpdate.ref
+        db.exec(qUpdate.set`${c.age} = ${updateContact.age}`.where`${c.age} = 42`)
 
         db.delete(one)
 
@@ -112,7 +130,7 @@ describe('SQLite Driver Tests', () => {
 
         db.exec($.deleteFrom(Contact).where(c => $`${c.age} = 40`))
         const remaining = db.all(dbContacts)
-        $.dump(remaining)
+        if (sub) $.dump(remaining)
 
         expect(remaining).toBeArrayOfSize(3)
         for (const contact of remaining) {
@@ -120,6 +138,7 @@ describe('SQLite Driver Tests', () => {
         }
 
         expect(db.value($.from(Contact).select`COUNT(*)`)).toBe(remaining.length)
+        expect(db.value($.from(Contact).select`COUNT(*)`.into(Number))).toBe(remaining.length)
         expect(db.value($.from(Contact).rowCount())).toBe(remaining.length)
 
         expect(db.value($.from(Contact).where(c => $`${c.age} = 40`).exists())).toBeFalse()
@@ -133,7 +152,58 @@ describe('SQLite Driver Tests', () => {
         expect(db.value($.from(Contact).select`COUNT(*)`)).toBe(0)
         expect(db.value($.from(Contact).rowCount())).toBe(0)
 
-        sub.release()
+        if (sub) sub.release()
+    })
+
+    it ('can select column', () => {
+        recreateContacts()
+
+        // const sub = useFilter(db, sql => console.log(sql))
+        const q = $.from(Contact)
+        expect(db.column(q.clone().select(c => $`${c.id}`))).toEqual(contacts.map(x => x.id))
+
+        expect(db.column(q.clone().select(c => $`${c.firstName}`))).toEqual(contacts.map(x => x.firstName))
+        
+        expect(db.column(q.clone().select(c => $`${c.age}`))).toEqual(contacts.map(x => x.age))
+
+        expect(db.column(q.clone().select(c => $`${c.createdAt}`))).toBeArrayOfSize(contacts.length)
+
+        const age = 27
+        expect(db.column`SELECT age from Contact`).toEqual(contacts.map(x => x.age))
+        expect(db.column`SELECT age from Contact WHERE age = ${age}`).toEqual(contacts.filter(x => x.age == 27).map(x => x.age))
+        expect(db.column`SELECT age from Contact WHERE age = ${age}`).toEqual(contacts.filter(x => x.age == 27).map(x => x.age))
+        expect(db.column($.fragment('SELECT age from Contact WHERE age = $age', { age }))).toEqual(contacts.filter(x => x.age == 27).map(x => x.age))
+    })
+
+    it ('can select arrays', () => {
+        recreateContacts()
+
+        const sub = false
+        // const sub = useFilter(db, sql => console.log(sql))
+        
+        const q = $.from(Contact).select({ props:['id', 'firstName', 'lastName', 'age', 'email', 'city'] })
+
+        const contactArrays = contacts.map(({ id, firstName, lastName, age, email, city }) => 
+            [id, firstName, lastName, age, email, city])
+
+        var dbContacts = db.arrays(q.clone())
+        if (sub) $.dump(dbContacts)
+
+        expect(dbContacts).toEqual(contactArrays)
+        expect(db.arrays`SELECT id, firstName, lastName, age, email, city FROM Contact`).toEqual(contactArrays)
+        
+        const age = 27
+        expect(db.arrays`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE age = ${age}`)
+            .toEqual(contactArrays.filter(x => x[3] === age))
+
+        expect(db.arrays($.fragment(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE age = $age`, { age })))
+            .toEqual(contactArrays.filter(x => x[3] === age))
+        
+        const id = 1
+        expect(db.array(q.clone().where(c => $`${c.id} = ${id}`))).toEqual(contactArrays[0])
+        expect(db.array`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = ${id}`).toEqual(contactArrays[0])
+        expect(db.array($.fragment(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = $id`, { id }))).toEqual(contactArrays[0])
+
     })
 
 })

@@ -25,12 +25,8 @@ type UpdateOptions = {
     onlyProps?:string[] 
     /** only update columns with values */
     onlyWithValues?:boolean
-    /** force update even with no where clause */
-    force?:boolean
 }
 type DeleteOptions = {
-    /** force delete even with no where clause */
-    force?:boolean
     where?:Fragment|Fragment[]
 }
 
@@ -56,26 +52,44 @@ export class DbConnection {
 
     quote(symbol:string) { return this.$.quote(symbol) }
     
-    async insert<T extends ClassInstance>(row:T, options?:InsertOptions) {
+    insert<T extends ClassInstance>(row:T, options?:InsertOptions) {
         return Promise.resolve(this.sync.insert<T>(row, options))
     }
-    async insertAll<T extends ClassInstance>(rows:T[], options?:InsertOptions) {
+    insertAll<T extends ClassInstance>(rows:T[], options?:InsertOptions) {
         return Promise.resolve(this.sync.insertAll<T>(rows, options))
     }
-    async listTables() {
+    listTables() {
         return Promise.resolve(this.sync.listTables())
     }
-    async dropTable<Table extends ClassParam>(table:Table) { 
+    dropTable<Table extends ClassParam>(table:Table) { 
         return Promise.resolve(this.sync.dropTable<Table>(table))
     }
-    async createTable<Table extends ClassParam>(table:Table) {
+    createTable<Table extends ClassParam>(table:Table) {
         return Promise.resolve(this.sync.createTable<Table>(table))
     }
-    async all<ReturnType>(strings: TemplateStringsArray, ...params: any[]) {
+    all<ReturnType>(strings: TemplateStringsArray, ...params: any[]) {
         return Promise.resolve(this.sync.all<ReturnType>(strings, ...params))
     }
-    async one<ReturnType>(strings: TemplateStringsArray, ...params: any[]) {
+    one<ReturnType>(strings: TemplateStringsArray, ...params: any[]) {
         return Promise.resolve(this.sync.one<ReturnType>(strings, ...params))
+    }
+    column<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        return Promise.resolve(this.sync.column<ReturnValue>(strings, ...params))
+    }
+    value<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        return Promise.resolve(this.sync.value<ReturnValue>(strings, ...params))
+    }
+    arrays(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        return Promise.resolve(this.sync.arrays(strings, ...params))
+    }
+    array(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        return Promise.resolve(this.sync.array(strings, ...params))
+    }
+    exec(strings:TemplateStringsArray | SqlBuilder | Fragment, ...params:any[]) {
+        return Promise.resolve(this.sync.exec(strings, ...params))
+    }
+    run(strings:TemplateStringsArray | SqlBuilder | Fragment, ...params:any[]) {
+        return Promise.resolve(this.sync.run(strings, ...params))
     }
 
     prepare<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
@@ -261,9 +275,32 @@ export class SyncDbConnection {
         return value
     }
 
+    arrays(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        const [stmt, p] = this.prepareSync(strings, ...params)
+        return Array.isArray(p) 
+            ? stmt.arraysSync(...p)
+            : stmt.arraysSync(p)
+    }
+
+    array(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
+        const [stmt, p] = this.prepareSync(strings, ...params)
+        return Array.isArray(p) 
+            ? stmt.arraySync(...p)
+            : stmt.arraySync(p)
+    }
+
     exec(strings:TemplateStringsArray | SqlBuilder | Fragment, ...params:any[]) {
         const [stmt, p] = this.prepareSync(strings, ...params)
         return Array.isArray(p) ? stmt.execSync(...p) : stmt.execSync(p)
+    }
+
+    run(strings:TemplateStringsArray | SqlBuilder | Fragment, ...params:any[]) {
+        const [stmt, p] = this.prepareSync(strings, ...params)
+        if (Array.isArray(p)) {
+            stmt.runSync(...p)
+        } else {
+            stmt.runSync(p)
+        }
     }
 }
 

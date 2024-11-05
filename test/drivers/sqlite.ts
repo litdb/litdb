@@ -132,7 +132,7 @@ class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
     execSync(...params: ParamsType): Changes {
         //console.log('params',params)
         const ret = this.native.run(...params)
-        console.log('ret',ret)
+        // console.log('ret',ret)
         return ret
     }
 
