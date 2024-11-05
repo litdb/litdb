@@ -4,11 +4,11 @@ import type {
     JoinDefinition, JoinParams, JoinType,
     IntoFragment, 
 } from "./types"
-import { Meta } from "./meta"
+import { Meta, type } from "./meta"
 import { assertSql } from "./schema"
 import { Sql } from "./sql"
-import { asRef, asType, isTemplateStrings, leftPart, nextParam, toStr } from "./utils"
-import { alignRight } from "./inspect"
+import { asRef, asType, clsName, isTemplateStrings, leftPart, nextParam, toStr } from "./utils"
+import { alignRight, Inspect } from "./inspect"
 
 type OnJoin<
     First extends Constructor<any>, 
@@ -59,6 +59,7 @@ type This<T, NewTables extends Constructor<any>[]> =
     WhereQuery<NewTables>
 
 export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder {
+    get [type]() { return clsName(`WhereQuery`,...this.tables) }
   
     constructor(
         public $:ReturnType<typeof Sql.create>, 
@@ -66,6 +67,23 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         public metas:Meta[], 
         public refs: TypeRefs<Tables>
     ) {
+    }
+
+    log(level:"info"|"debug"="info") {
+        if (level == "debug") {
+            const debug = this.toString()
+            const to:any = {
+                refs:this.refs.map(x => x.$ref).map(r => [Meta.assertMeta(r.cls).tableName,r.as].filter(x => !!x).join(' '))
+            }
+            for (const [key,val] of Object.entries(this)) {
+                if (key[0] == '_' && Array.isArray(val) && val.length) {
+                    to[key.substring(1)] = val
+                }
+            }
+            console.log([debug.trimEnd(), Inspect.dump(to).replaceAll('\\',''),''].join('\n'))
+        }
+        else console.log(Inspect.dump(this))
+        return this
     }
 
     protected _where:{ condition:string, sql?:string }[] = []
@@ -107,7 +125,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             [...this.tables, table],
             [...this.metas, meta],
             [...this.refs, ref]
-        );
+        )
     }
 
     copyInto(instance:WhereQuery<any>) {
@@ -408,8 +426,21 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         const params = this.params
         return { sql, params }
     }
-}
 
+    toString() {
+        const ret = this.build()
+        const { into } = ret as any
+        const intoName = into && (into.name || (into.$type && into.$type.name) || into.constructor.name) || ''
+        return [
+            Inspect.dump(ret).trim(),
+            [
+                this[type] ?? '',
+                intoName && intoName[0] != '[' ? ` => ${intoName}` : ''
+            ].join(''),
+        ''].join('\n')
+    }
+
+}
 
 type SelectOptions = {
     props?:string[],
@@ -418,6 +449,7 @@ type SelectOptions = {
 }
 
 export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
+    get [type]() { return clsName(`SelectQuery`,...this.tables) }
 
     protected _select:string[] = []
     protected _groupBy:string[] = []
@@ -617,6 +649,8 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
 }
 
 export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
+    get name() { return clsName(`UpdateQuery`,...this.tables) }
+
     private _set:string[] = []
     set(options:TemplateStringsArray|Fragment|{ [K in keyof Partial<InstanceType<First<Tables>>>]: any }|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) {
         if (!options) {
@@ -661,6 +695,7 @@ export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
 }
 
 export class DeleteQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> { 
+    get [type]() { return clsName(`DeleteQuery`,...this.tables) }
 
     buildDelete() {
         const sql = `DELETE FROM ${this.quoteTable(this.meta.tableName)}${this.buildWhere()}`

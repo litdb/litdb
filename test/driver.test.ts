@@ -98,7 +98,7 @@ describe('SQLite Driver Tests', () => {
         var dbContacts = $.from(Contact).select({ props:['id','firstName','lastName','age'] }).into(Contact)
         if (sub) $.dump(db.all(dbContacts))
 
-        var updateContact = contacts[0]
+        var updateContact = new Contact(contacts[0])
         updateContact.age = 40
         var { changes } = db.update(updateContact)
         expect(changes).toBe(1)

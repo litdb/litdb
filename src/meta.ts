@@ -1,5 +1,7 @@
 import { ClassParam, ReflectMeta } from "./types"
 
+export const type = Symbol('type')
+
 export class Meta {
     static metadata: { [id:symbol]: Meta } = {}
 

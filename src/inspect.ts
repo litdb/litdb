@@ -32,14 +32,22 @@ export function alignAuto(obj:any, len:number, pad:string = ' ') : string {
 
 export class Inspect {
   
-    static dump(obj:any) {
+    static dump(obj:any) : string {
+        if (typeof obj == "object") {
+            if (typeof obj.build == "function") {
+                obj = obj.build()
+            }
+            if ("sql" in obj && "params" in obj) {
+                return [obj.sql, `PARAMS ${Inspect.dump(obj.params)}`].join('\n') + '\n'
+            }
+        }
         let to = JSON.stringify(obj, null, 4)
         return to.replace(/"/g,'')
     }
   
     static printDump(obj:any) { console.log(Inspect.dump(obj)) }
   
-    static dumpTable(rows:any[]) {
+    static dumpTable(rows:any[]) : string {
         let mapRows = rows
         let keys = uniqueKeys(mapRows)
         let colSizes:{[index:string]:number} = {}

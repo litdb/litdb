@@ -120,7 +120,7 @@ export class Sql
             return (x:Table) => $.fragment($`${x.id} = $id`, { id })
         }
 
-        $.log = function(obj:any){ console.log(Inspect.dump(obj)) }
+        $.log = function(obj:any) { console.log(Inspect.dump(obj)) }
         $.dump = function(obj:any[]){ console.log(Inspect.dumpTable(obj)) }
     
         return $

@@ -204,7 +204,6 @@ export type WhereOptions = {
     isNull?:     string[]
     notNull?:    string[]
     op?:         [string, Record<string,any>]
-    sql?:        Fragment
     rawSql?:     string|string[]
     params?:     Record<string,any>
 }

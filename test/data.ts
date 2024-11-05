@@ -5,19 +5,19 @@ export class Contact {
     constructor(data?: Partial<Contact>) { Object.assign(this, data) }
 
     @column(DataType.INTEGER, { autoIncrement: true })
-    id: number = 0
+    id = 0
     
     @column(DataType.TEXT, { required: true })
-    firstName: string = ''
+    firstName = ''
     
     @column(DataType.TEXT, { required: true })
-    lastName: string = ''
+    lastName = ''
     
     @column(DataType.INTEGER)
     age?: number
     
     @column(DataType.TEXT, { required: true })
-    email: string = ''
+    email = ''
     
     @column(DataType.TEXT)
     phone?: string
@@ -35,10 +35,10 @@ export class Contact {
     postCode?: string
     
     @column(DataType.DATETIME, { defaultValue:DefaultValues.NOW })
-    createdAt: Date = new Date()
+    createdAt = new Date(2025,1,1)
     
     @column(DataType.DATETIME, { defaultValue:DefaultValues.NOW })
-    updatedAt: Date = new Date()
+    updatedAt = new Date(2025,1,1)
 }
 
 @table()

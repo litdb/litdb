@@ -126,3 +126,15 @@ export function isTemplateStrings(arg: any): arg is TemplateStringsArray {
 }
 
 export function snakeCase(s: string) { return (s || '').replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() }
+
+export function clsName(name:string, ...args:string[]|{ name:string }[]|{ constructor:{ name:string} }[]) {
+    if (!args || !args.length) return name
+    const argName = (o:any) => typeof o == "string"
+        ? o
+        : "name" in o 
+            ? o.name
+            : "constructor" in o && "name" in o.constructor
+                ? o.constructor.name
+                : ''
+    return `${name}<${Array.from(args).map(argName).join(',')}>`
+}
