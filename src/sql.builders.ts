@@ -257,8 +257,8 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 
     condition(condition:"AND"|"OR", options:WhereOptions|Fragment) {
         
-        if ("sql" in options) {
-            this._where.push({ condition:condition, sql:this.mergeParams(options) })
+        if ("sql" in options && "params" in options) {
+            this._where.push({ condition:condition, sql:this.mergeParams(options as Fragment) })
         }
         else if (options.rawSql) {
             const sql = Array.isArray(options.rawSql) ? options.rawSql : [options.rawSql]
