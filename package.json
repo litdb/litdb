@@ -13,10 +13,10 @@
   },
   "scripts": {
     "build": "bun run build.ts",
-    "minify": "npx -y uglify-js dist/index.js --compress --mangle -o dist/index.min.js",
-    "compress": "npm run minify && brotli ./dist/index.min.js",
+    "minify": "uglifyjs dist/index.js --compress --mangle -o dist/index.min.js",
+    "compress": "bun run minify && brotli ./dist/index.min.js",
     "prepublishOnly": "bun run build",
-    "release": "rm -rf ./dist && npm run build && npm run minify && bump patch --commit --push --tag && npm publish --access public"
+    "release": "shx rm -rf ./dist && npm run build && npm run minify && bump patch --commit --push --tag && npm publish --access public",
   },
   "files": [
     "dist"
