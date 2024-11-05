@@ -17,9 +17,6 @@ describe('SQLite SelectQuery Tests', () => {
             sql: $('id,city')
         }))).toContain('id,city')
         expect(str($.from(Contact).select({
-            sql: [$('id'),$('city')]
-        }))).toContain('id, city')
-        expect(str($.from(Contact).select({
             columns: ['id', 'city']
         }))).toContain('"id", "city"')
         expect(str($.from(Contact).select({
@@ -47,9 +44,6 @@ describe('SQLite SelectQuery Tests', () => {
         expect(str($.from(Person).select({
             sql: $('id,email')
         }))).toContain('id,email')
-        expect(str($.from(Person).select({
-            sql: [$('id'),$('email')]
-        }))).toContain('id, email')
         expect(str($.from(Person).select({
             columns: ['id', 'email']
         }))).toContain('"id", "email"')
@@ -79,9 +73,6 @@ describe('SQLite SelectQuery Tests', () => {
         expect(str($.from(DynamicPerson).select({
             sql: $('id,email')
         }))).toContain('id,email')
-        expect(str($.from(DynamicPerson).select({
-            sql: [$('id'),$('email')]
-        }))).toContain('id, email')
         expect(str($.from(DynamicPerson).select({
             columns: ['id', 'email']
         }))).toContain('"id", "email"')

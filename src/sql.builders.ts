@@ -398,7 +398,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 
     into<T extends Constructor<any>>(into: T) : IntoFragment<InstanceType<T>> {
         const { sql, params } = this.build()
-        return { sql, params, into }
+        return { sql, params, into:into as any as InstanceType<T> }
     }
 
     build() {
@@ -413,7 +413,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 type SelectOptions = {
     props?:string[],
     columns?:string[],
-    sql?:Fragment|Fragment[],
+    sql?:Fragment,
 }
 
 export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
@@ -505,12 +505,10 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (typeof options === 'object') {
             const o = options as SelectOptions
             if (o.sql) {
-                const sql = Array.isArray(o.sql) ? o.sql : [o.sql]
-                for (const fragment of sql) {
-                    this._select.push(fragment.sql)
-                    this.addParams(fragment.params)
-                }
-            }
+                const frag = o.sql
+                this._select.push(frag.sql)
+                this.addParams(frag.params)
+        }
             if (o.props) {
                 for (const name of o.props) {
                     const column = this.meta.props.find(x => x.name == name)?.column
@@ -549,6 +547,18 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             this._limit = this.mergeParams(frag)
         }
         return this
+    }
+
+    exists() {
+        const q = this.clone()
+        q._select = ['TRUE']
+        q._limit = 'LIMIT 1'
+        return q.into(Boolean)
+    }
+
+    rowCount() {
+        const { sql, params } = this.build()
+        return { sql:`SELECT COUNT(*) FROM (${sql}) AS COUNT`, params, into:Number }
     }
 
     protected buildSelect() {
@@ -600,7 +610,8 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             + this.buildLimit()
         // console.log(`\n${sql}\n`)
         const params = this.params
-        return { sql, params }
+        const into = this._select.length == 0 ? this.tables[0] : undefined
+        return { sql, params, into }
     }
 }
 

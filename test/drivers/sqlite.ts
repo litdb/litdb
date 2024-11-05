@@ -1,12 +1,14 @@
 import { Database, Statement as BunStatement } from "bun:sqlite"
 import type { 
-    ColumnDefinition, Driver, Connection, SyncConnection, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,     
+    ColumnDefinition, Driver, Connection, SyncConnection, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,
+    Changes,     
 } from "../../src"
 import { 
     Sql, DbConnection, NamingStrategy, SyncDbConnection, DataType, DefaultValues, converterFor, DateTimeConverter, 
     DialectTypes, SqliteDialect, DefaultStrategy, Schema, isTemplateStrings,
     SqliteSchema,
 } from "../../src"
+import { Constructor } from "../../src/types"
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
 
@@ -79,6 +81,10 @@ class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
         this.native = statement
     }
 
+    as<T extends Constructor<any>>(t:T) {
+        return new SqliteStatement(this.native.as(t))
+    }
+
     all(...params: ParamsType): Promise<ReturnType[]> {
         return Promise.resolve(this.native.all(...params))
     }
@@ -119,13 +125,15 @@ class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
         return this.native.values(...params)?.[0] ?? null
     }
 
-    exec(...params: ParamsType): Promise<{ changes: number; lastInsertRowid: number | bigint; }> {
+    exec(...params: ParamsType): Promise<Changes> {
         //console.log('params',params)
         return Promise.resolve(this.native.run(...params))
     }
-    execSync(...params: ParamsType): { changes: number; lastInsertRowid: number | bigint; } {
+    execSync(...params: ParamsType): Changes {
         //console.log('params',params)
-        return this.native.run(...params)
+        const ret = this.native.run(...params)
+        console.log('ret',ret)
+        return ret
     }
 
     run(...params: ParamsType): Promise<void> {
