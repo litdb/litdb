@@ -86,8 +86,10 @@ export class Sql
         $.refs = function refs<T extends readonly Constructor[]>(...classes: [...T]): ConstructorToTypeRef<T> {
             return classes.map(cls => $.ref(cls)) as ConstructorToTypeRef<T>
         }
-        $.fragment = function(sql:string, params:Record<string,any>): Fragment {
-            return ({ sql, params })
+        $.fragment = function(sql:string|Fragment, params:Record<string,any>={}): Fragment {
+            return typeof sql == 'object' 
+                ? ({ sql: mergeParams(params, sql), params }) 
+                : ({ sql, params })
         }
 
         $.from = function<Table extends Constructor<any>>(table:Table | TypeRef<InstanceType<Table>>, alias?:string) {
@@ -113,6 +115,9 @@ export class Sql
         }
         $.orderBy = function<Tables extends Constructor<any>[]>(...tables:Tables) {
             return new SqlOrderByBuilder<Tables>($, ...tables)
+        }
+        $.idEquals = function hasId<Table extends { id:number|string }>(id:number|string) {
+            return (x:Table) => $.fragment($`${x.id} = $id`, { id })
         }
 
         $.log = function(obj:any){ console.log(Inspect.dump(obj)) }

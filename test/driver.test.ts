@@ -72,7 +72,7 @@ describe('SQLite Driver Tests', () => {
 
     it ('does CRUD Contact Table', () => {
 
-        const sub:any = null
+        var sub:any = null
         // const sub = useFilter(db, sql => console.log(sql))
         
         db.dropTable(Contact)
@@ -109,10 +109,11 @@ describe('SQLite Driver Tests', () => {
 
         const q = $.from(Contact).where(c => $`${c.id} == ${updateContact.id}`).into(Contact)
         const one = db.one(q)!
-        expect(one.age).toBe(40)
+        expect(one.age).toBe(updateContact.age)
 
         // named props
-        db.exec($.update(Contact).set({ age:41 }).where(c => $`${c.age} = 40`))
+        // sub = useFilter(db, sql => console.log(sql))
+        db.exec($.update(Contact).set({ age:41, city:'Austin', state:'Texas' }).where(c => $`${c.age} = ${updateContact.age}`))
         expect(db.value($.from(Contact).where(c => $`${c.age} = 41`).rowCount())).toBe(2)
         
         // function
