@@ -223,43 +223,44 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return this.addJoin<NewTable>(joinOptions<NewTable>("CROSS JOIN", asType(cls), options, asRef(cls)))
     }
 
-    where(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+    where(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) { 
         return this.and(options, ...params)
     }
 
-    and(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) {
+    and(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) {
         if (!options && params.length == 0) {
             this._where.length = 0
             return this
         } else if (isTemplateStrings(options)) {
-            return this.condition('AND', { sql: this.$(options as TemplateStringsArray, ...params) }) 
+            return this.condition('AND', this.$(options as TemplateStringsArray, ...params)) 
         } else if (typeof options == 'function') {
             const sql = assertSql(options.call(this, ...this.refs))
-            return this.condition('AND', { sql })
+            return this.condition('AND', sql)
         } else {
             return this.condition('AND', options as WhereOptions) 
         }
     }
 
-    or(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
+    or(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) { 
         if (!options && params.length == 0) {
             this._where.length = 0
             return this
         } else if (Array.isArray(options)) {
-            return this.condition('OR', { sql: this.$(options as TemplateStringsArray, ...params) }) 
+            return this.condition('OR', this.$(options as TemplateStringsArray, ...params)) 
         } else if (typeof options == 'function') {
             const sql = assertSql(options.call(this, ...this.refs))
-            return this.condition('OR', { sql })
+            return this.condition('OR', sql)
         } else {
             return this.condition('OR', options as WhereOptions) 
         }
     }
 
-    condition(condition:"AND"|"OR", options:WhereOptions) {
-        if (options.sql) {
-            this._where.push({ condition:condition, sql:this.mergeParams(options.sql) })
+    condition(condition:"AND"|"OR", options:WhereOptions|Fragment) {
+        
+        if ("sql" in options) {
+            this._where.push({ condition:condition, sql:this.mergeParams(options) })
         }
-        if (options.rawSql) {
+        else if (options.rawSql) {
             const sql = Array.isArray(options.rawSql) ? options.rawSql : [options.rawSql]
             for (const fragment of sql) {
                 this._where.push({ condition, sql:fragment })
@@ -626,9 +627,8 @@ export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (typeof options == 'object') {
             
             if ("sql" in options) {
-                const frag = options.sql
-                this._set.push(frag.sql)
-                this.addParams(frag.params)
+                const frag = options as Fragment
+                this._set.push(this.mergeParams(frag))
             } else {
                 for (const [key, value] of Object.entries(options)) {
                     const prop = this.meta.props.find(x => x.name === key)

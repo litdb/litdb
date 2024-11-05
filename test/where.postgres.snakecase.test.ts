@@ -158,8 +158,8 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
             
         assert($.from(Contact).where({ equals: { id } }))
         assert($.from(Contact).where({ op:  ['=',{ id }] }))
-        assert($.from(Contact).where({ sql: $(`${qId} = $id`, { id }) }))
-        assert($.from(Contact).where({ sql: { sql:`${qId} = $id`, params:{ id } } }))
+        assert($.from(Contact).where($(`${qId} = $id`, { id })))
+        assert($.from(Contact).where({ sql:`${qId} = $id`, params:{ id } }))
     })
 
     it (`Can query single Person alias`, () => {
@@ -175,8 +175,8 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
 
         assert($.from(Person).where({ equals:  { key } }))
         assert($.from(Person).where({ op:  ['=',{ key }] }))
-        assert($.from(Person).where({ sql: $(`${qId} = $key`, { key }) }))
-        assert($.from(Person).where({ sql: { sql:`${qId} = $key`, params:{ key } } }))
+        assert($.from(Person).where($(`${qId} = $key`, { key })))
+        assert($.from(Person).where({ sql:`${qId} = $key`, params:{ key } }))
 
         expect(str($.from(Person).where((p:Person) => $`${p.key} = ${key}`)))
             .toBe(`SELECT ${selectPerson} FROM ${qContact} WHERE ${qId} = $_1`)
@@ -197,8 +197,8 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
 
         assert($.from(DynamicPerson).where({ equals:  { key } }))
         assert($.from(DynamicPerson).where({ op:  ['=',{ key }] }))
-        assert($.from(DynamicPerson).where({ sql: $(`${qId} = $key`, { key }) }))
-        assert($.from(DynamicPerson).where({ sql: { sql:`${qId} = $key`, params:{ key } } }))
+        assert($.from(DynamicPerson).where($(`${qId} = $key`, { key })))
+        assert($.from(DynamicPerson).where({ sql:`${qId} = $key`, params:{ key } }))
     })
 
     it (`Can query single Contact with multiple params`, () => {
@@ -216,9 +216,9 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
 
         assert($.from(Contact).where({ equals: { id, city } }))
         assert($.from(Contact).where({ op:  ['=',{ id, city }] }))
-        assert($.from(Contact).where({ sql: $(`${qId} = $id AND ${qCity} = $city`, { id, city }) }))
+        assert($.from(Contact).where($(`${qId} = $id AND ${qCity} = $city`, { id, city })))
 
-        assert($.from(Contact).where({ sql: $(`${qId} = $id AND ${qCity} = $city`, { id, city }) }))
+        assert($.from(Contact).where($(`${qId} = $id AND ${qCity} = $city`, { id, city })))
     })
 
     it (`Can query single Person alias with multiple params`, () => {
@@ -236,8 +236,8 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
 
         assert($.from(Person).where({ equals: { key, name } }))
         assert($.from(Person).where({ op:  ['=',{ key, name }] }))
-        assert($.from(Person).where({ sql: $(`${qId} = $key AND ${qFirstName} = $name`, { key, name }) }))
-        assert($.from(Person).where({ sql: $(`${qId} = $key AND ${qFirstName} = $name`, { key, name }) }))
+        assert($.from(Person).where($(`${qId} = $key AND ${qFirstName} = $name`, { key, name })))
+        assert($.from(Person).where($(`${qId} = $key AND ${qFirstName} = $name`, { key, name })))
     })
 
     it (`Can query single Contact with tagged template`, () => {
@@ -250,7 +250,7 @@ describe('PostgreSQL snake_case WHERE Tests', () => {
 
         assert($.from(Contact).where(c => $`${c.id} = ${id}`))
         assert($.from(Contact).where`${sId} = ${id}`)
-        assert($.from(Contact).where({ sql: $`${sId} = ${id}` }))
+        assert($.from(Contact).where($`${sId} = ${id}`))
     })
 
 })

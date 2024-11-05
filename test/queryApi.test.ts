@@ -47,8 +47,8 @@ describe('SelectQuery API Tests', () => {
 
         assert($.from(Contact).where(c => $`a = ${id} AND city = ${city}`))
         assert($.from(Contact).where`a = ${id}`.and`city = ${city}`)
-        assert($.from(Contact).where( { sql:$`a = ${id}` }).and({ sql:$`city = ${city}` }))
-        assert($.from(Contact).where( { rawSql:`a = $_1 AND city = $_2`, params: { _1:id, _2:city }  }))
+        assert($.from(Contact).where($`a = ${id}`).and($`city = ${city}`))
+        assert($.from(Contact).where({ rawSql:`a = $_1 AND city = $_2`, params: { _1:id, _2:city }  }))
     })
 
 })
