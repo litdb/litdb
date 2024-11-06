@@ -21,9 +21,9 @@ export class Meta {
             if (!name)
                 throw new Error(`Class or constructor function required`)
             else if (typeof table === 'function' || typeof table.constructor === 'function') 
-                throw new Error(`${name} is not a class or constructor function`)
+                throw new Error(`${name} is not a Table class, missing @table?`)
             else
-                throw new Error(`${name} does not contain metadata, missing @table?`)            
+                throw new Error(`${name} is not a Table class with metadata, missing @table?`)
         }
         return cls
     }
@@ -34,7 +34,7 @@ export class Meta {
             throw new Error(`${cls.name} does not have a @table annotation`)
         }
         if (!cls.$props || !cls.$props.find((x:any) => x.column!!)) {
-            throw new Error(`${cls.name} does not have any @column annotations`)
+            throw new Error(`${cls.name} does not have any columns, mssing @column?`)
         }
         return cls as ReflectMeta
     }

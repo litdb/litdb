@@ -81,10 +81,14 @@ export class Schema {
 
     update(table:ClassParam, options?:{ onlyProps?:string[] }) {
         const meta = Meta.assertMeta(table)
-        let props = meta.props.filter(x => x.column!!)
-        if (options?.onlyProps) {
-            props = props.filter(c => options.onlyProps!.includes(c.name) || c.column?.primaryKey)
-        }
+        let props = options?.onlyProps
+            ? meta.props.filter(c => options.onlyProps!.includes(c.name) || c.column?.primaryKey)
+            : meta.props.filter(x => x.column!!)
+
+        const primaryKeys = props.filter(c => c.column?.primaryKey)
+        if (!primaryKeys.length)
+            throw new Error(`${meta.name} does not have a PRIMARY KEY`)
+
         const columns = props.map(x => x.column!)
         const setColumns = columns.filter(c => !c.primaryKey)
         const whereColumns = columns.filter(c => c.primaryKey)
