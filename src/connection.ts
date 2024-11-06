@@ -40,7 +40,7 @@ export class DbConnection {
     }) {
         this.$ = connection.$
         this.driver = connection.driver
-        this.schema = connection.driver.schema
+        this.schema = this.$.schema = connection.driver.schema
     }
 
     get sync() { 
@@ -122,7 +122,7 @@ export class SyncDbConnection {
     }) {
         this.$ = connection.$
         this.driver = connection.driver
-        this.schema = connection.driver.schema
+        this.schema = this.$.schema = connection.driver.schema
     }
 
     quote(symbol:string) { return this.$.quote(symbol) }
@@ -315,7 +315,7 @@ export class ConnectionBase {
         $:ReturnType<typeof Sql.create>
     }) {
         this.$ = driver.$
-        this.schema = driver.schema
+        this.schema = this.$.schema = driver.schema
         this.dialect = driver.dialect
         this.async = new DbConnection(this)
         this.sync = new SyncDbConnection(this)

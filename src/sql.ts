@@ -6,6 +6,7 @@ import { Meta } from "./meta"
 import { asRef, asType, isTemplateStrings, mergeParams } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
+import { Schema } from "./schema"
 
 export class Sql
 {
@@ -63,6 +64,7 @@ export class Sql
                 return ({ sql:strings, params:params[0] })
             } else throw new Error(`sql(${typeof strings}) is invalid`)
         }
+        $.schema = new Schema(dialect)
         $.dialect = dialect
         $.quote = dialect.quote.bind(dialect)
         $.quoteColumn = dialect.quoteColumn.bind(dialect)

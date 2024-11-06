@@ -49,7 +49,7 @@ export class MySql extends Sqlite
         this.dialect = new MySqlDialect()
         this.$ = this.dialect.$
         this.types = new MySqlTypes()
-        this.schema = new MySqlSchema(this)
+        this.schema = this.$.schema = new MySqlSchema(this)
     }
 }
 

@@ -188,7 +188,7 @@ class Sqlite implements Driver
         this.dialect = new SqliteDialect()
         this.$ = this.dialect.$
         this.name = this.constructor.name
-        this.schema = new SqliteSchema(this)
+        this.schema = this.$.schema = new SqliteSchema(this)
         this.types = new SqliteTypes()
     }
 
@@ -261,7 +261,7 @@ class SqliteConnection implements Connection, SyncConnection {
         $:ReturnType<typeof Sql.create>
     }) {
         this.$ = driver.$
-        this.schema = driver.schema
+        this.schema = this.$.schema = driver.schema
         this.dialect = driver.dialect
         this.async = new DbConnection(this)
         this.sync = new SyncDbConnection(this)

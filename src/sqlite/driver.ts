@@ -62,7 +62,7 @@ export class Sqlite implements Driver
         this.dialect = new SqliteDialect()
         this.$ = this.dialect.$
         this.types = new SqliteTypes()
-        this.schema = new SqliteSchema(this)
+        this.schema = this.$.schema = new SqliteSchema(this)
     }
 }
 
