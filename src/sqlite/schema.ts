@@ -18,7 +18,8 @@ export class SqliteSchema extends Schema {
 
     sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition): string {
         const unique = column.unique ? 'UNIQUE INDEX' : 'INDEX'
-        return `CREATE ${unique} idx_${table.name}_${column.name} ON ${this.dialect.quoteTable(table.name)} (${this.dialect.quoteColumn(column.name)})`
+        const name = `idx_${table.name}_${column.name}`.toLowerCase()
+        return `CREATE ${unique} ${name} ON ${this.dialect.quoteTable(table.name)} (${this.dialect.quoteColumn(column.name)})`
     }
 
     sqlColumnDefinition(column: ColumnDefinition): string {
