@@ -1,4 +1,4 @@
-import { uniqueKeys } from "./utils"
+import { toStr, uniqueKeys } from "./utils"
 
 export function alignLeft(str:string, len:number, pad:string = ' ') : string {
     if (len < 0) return ''
@@ -42,7 +42,7 @@ export class Inspect {
             }
         }
         let to = JSON.stringify(obj, null, 4)
-        return to.replace(/"/g,'')
+        return to.replace(/\\"/g,'')
     }
   
     static printDump(obj:any) { console.log(Inspect.dump(obj)) }
@@ -89,4 +89,28 @@ export class Inspect {
     }
   
     static printDumpTable(rows:any[]) { console.log(Inspect.dumpTable(rows)) }
+}
+
+export function Watch(fn:(() => Record<string,any>)|(() => void)) {
+    try {
+
+        const results = fn()
+        if (!results) return
+        for (const key in results) {
+            console.log(`${key}:`)
+            const val = results[key]
+            if (Array.isArray(val)) {
+                console.table(val)
+            } else {
+                if (typeof val != "object")
+                    console.log(toStr(val).trim())
+                else
+                    console.log(Inspect.dump(val))
+            }
+            console.log()
+        }
+
+    } catch(e) {
+        console.error(`${e}`)
+    }
 }

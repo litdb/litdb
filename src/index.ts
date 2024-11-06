@@ -7,7 +7,7 @@ import { WhereQuery, SelectQuery, UpdateQuery, DeleteQuery, } from "./sql.builde
 import { Sql } from "./sql"
 import { Meta } from "./meta"
 import { Schema } from "./schema"
-import { Inspect } from "./inspect"
+import { Inspect, Watch } from "./inspect"
 import { pick, omit, toStr, mergeParams, nextParam, snakeCase, isTemplateStrings } from "./utils"
 import { converterFor, DateTimeConverter } from "./converters"
 import { table, column, Table, DefaultValues, DataType, } from "./model"
@@ -49,6 +49,7 @@ export {
   UpdateQuery,
   DeleteQuery,
   Inspect,
+  Watch,
   DateTimeConverter,
   converterFor,
   table,
