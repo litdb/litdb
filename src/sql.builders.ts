@@ -69,20 +69,8 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     ) {
     }
 
-    log(level:"info"|"debug"="info") {
-        if (level == "debug") {
-            const debug = this.toString()
-            const to:any = {
-                refs:this.refs.map(x => x.$ref).map(r => [Meta.assertMeta(r.cls).tableName,r.as].filter(x => !!x).join(' '))
-            }
-            for (const [key,val] of Object.entries(this)) {
-                if (key[0] == '_' && Array.isArray(val) && val.length) {
-                    to[key.substring(1)] = val
-                }
-            }
-            console.log([debug.trimEnd(), Inspect.dump(to).replaceAll('\\',''),''].join('\n'))
-        }
-        else console.log(Inspect.dump(this))
+    log(level?:"debug"|"verbose") {
+        console.log(this.toString(level))
         return this
     }
 
@@ -427,17 +415,36 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return { sql, params }
     }
 
-    toString() {
+    toString(level?:"debug"|"verbose") {
         const ret = this.build()
+        if (level != "debug" && level != "verbose")
+            return Inspect.dump(ret)
         const { into } = ret as any
         const intoName = into && (into.name || (into.$type && into.$type.name) || into.constructor.name) || ''
-        return [
+        const debug = [
             Inspect.dump(ret).trim(),
             [
                 this[type] ?? '',
                 intoName && intoName[0] != '[' ? ` => ${intoName}` : ''
             ].join(''),
         ''].join('\n')
+
+        if (level === "verbose")
+        {
+            const to:any = {
+                refs:this.refs.map(x => x.$ref).map(r => [
+                    Meta.assertMeta(r.cls).tableName, 
+                    r.as != this.quote(Meta.assertMeta(r.cls).tableName) ? r.as : ''
+                ].filter(x => !!x).join(' '))
+            }
+            for (const [key,val] of Object.entries(this)) {
+                if (key[0] == '_' && Array.isArray(val) && val.length) {
+                    to[key.substring(1)] = val
+                }
+            }
+            return [debug.trimEnd(), Inspect.dump(to).replaceAll('"',''),''].join('\n')
+        }
+        return debug
     }
 
 }
