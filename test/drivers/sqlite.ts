@@ -1,14 +1,16 @@
 import { Database, Statement as BunStatement } from "bun:sqlite"
 import type { 
     ColumnDefinition, Driver, Connection, SyncConnection, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,
-    Changes,     
+    Changes,
+    ColumnType,     
 } from "../../src"
 import { 
-    Sql, DbConnection, NamingStrategy, SyncDbConnection, DataType, DefaultValues, converterFor, DateTimeConverter, 
+    Sql, DbConnection, NamingStrategy, SyncDbConnection, DefaultValues, converterFor, DateTimeConverter, 
     DialectTypes, SqliteDialect, DefaultStrategy, Schema, isTemplateStrings,
     SqliteSchema,
 } from "../../src"
 import { Constructor } from "../../src/types"
+import { SqliteTypes } from "../../src/sqlite/driver"
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
 
@@ -144,26 +146,6 @@ class SqliteStatement<ReturnType, ParamsType extends DbBinding[]>
     }
 }
 
-export class SqliteTypes implements DialectTypes {
-    // use as-is
-    native = [
-        DataType.INTEGER, DataType.SMALLINT, DataType.BIGINT, // INTEGER
-        DataType.REAL, DataType.DOUBLE, DataType.FLOAT,  // REAL
-        DataType.NUMERIC, DataType.DECIMAL, DataType.BOOLEAN, DataType.DATE, DataType.DATETIME, //NUMERIC
-    ]
-    // use these types instead
-    map: Record<string,DataType[]> = {
-        INTEGER: [DataType.INTERVAL],
-        REAL:    [DataType.REAL],
-        NUMERIC: [DataType.DECIMAL, DataType.NUMERIC, DataType.MONEY],
-        BLOB:    [DataType.BLOB, DataType.BYTES, DataType.BIT],
-        TEXT: [
-            DataType.UUID, DataType.JSON, DataType.JSONB, DataType.XML, 
-            DataType.TIME, DataType.TIMEZ, DataType.TIMESTAMP, DataType.TIMESTAMPZ,
-        ],
-    }
-}
-
 class Sqlite implements Driver
 {
     name: string
@@ -181,7 +163,7 @@ class Sqlite implements Driver
     types: DialectTypes
 
     converters: { [key: string]: TypeConverter } = {
-        ...converterFor(DateTimeConverter.instance, DataType.DATE, DataType.DATETIME, DataType.TIMESTAMP, DataType.TIMESTAMPZ),
+        ...converterFor(DateTimeConverter.instance, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
     }
 
     constructor() {
@@ -208,12 +190,12 @@ class Sqlite implements Driver
     }
 
     sqlColumnDefinition(column: ColumnDefinition): string {
-        let dataType = column.type as DataType
-        let type = this.types.native.includes(dataType) ? dataType : undefined
+        let dataType = column.type
+        let type = this.types.native.includes(dataType as ColumnType) ? dataType : undefined
         if (!type) {
             for (const [sqliteType, typeMapping] of Object.entries(this.types.map)) {
-                if (typeMapping.includes(dataType)) {
-                    type = sqliteType as DataType
+                if (typeMapping.includes(dataType as ColumnType)) {
+                    type = sqliteType
                     break
                 }
             }

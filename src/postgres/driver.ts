@@ -1,5 +1,4 @@
 import type { ColumnType, DialectTypes, Driver } from "../types"
-import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
 import { PostgreSqlDialect } from "./dialect"
 import { PostgreSqlSchema } from "./schema"
@@ -8,18 +7,18 @@ import { Schema } from "../schema"
 
 class PostgreSqlTypes implements DialectTypes {
     // use as-is
-    native = [
-        DataType.INTEGER, DataType.SMALLINT, DataType.BIGINT, // INTEGER
-        DataType.REAL, DataType.DOUBLE, DataType.FLOAT, DataType.DECIMAL,  // REAL
-        DataType.NUMERIC, DataType.DECIMAL, DataType.MONEY, //NUMERIC 
-        DataType.BOOLEAN, 
-        DataType.DATE, DataType.DATETIME,
-        DataType.TIME, DataType.TIMEZ, DataType.TIMESTAMP, DataType.TIMESTAMPZ, DataType.INTERVAL,
-        DataType.UUID, DataType.JSON, DataType.JSONB, DataType.XML, 
-        DataType.BLOB, DataType.BYTES, DataType.BIT,
+    native:ColumnType[] = [
+        "INTEGER", "SMALLINT", "BIGINT", // INTEGER
+        "REAL", "DOUBLE", "FLOAT", "DECIMAL",  // REAL
+        "NUMERIC", "DECIMAL", "MONEY", //NUMERIC 
+        "BOOLEAN", 
+        "DATE", "DATETIME",
+        "TIME", "TIMEZ", "TIMESTAMP", "TIMESTAMPZ", "INTERVAL",
+        "UUID", "JSON", "JSONB", "XML", 
+        "BLOB", "BYTES", "BIT",
     ]
     // use these types instead
-    map : Record<string,ColumnType[]> = {
+    map: Record<string,ColumnType[]> = {
     }
 }
 

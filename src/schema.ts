@@ -42,6 +42,8 @@ export class Schema {
 
     sqlColumnDefinition(column: ColumnDefinition):string { throw new Error(DriverRequired) }
 
+    sqlForeignKeyDefinition(table: TableDefinition, column: ColumnDefinition):string { throw new Error(DriverRequired) }
+
     sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition):string { throw new Error(DriverRequired) }
 
     dropTable(table:ClassParam) {
@@ -54,8 +56,16 @@ export class Schema {
     createTable(table:ClassParam) {
         const meta = Meta.assertMeta(table)
         const columns = meta.columns
-        let sqlColumns = columns.map(c => `${this.sqlColumnDefinition(c)}`).join(',\n    ')
-        let sql = `CREATE TABLE ${this.dialect.quoteTable(meta.tableName)} (\n    ${sqlColumns}\n);\n`
+        let sqlColumns = columns.map(c => this.sqlColumnDefinition(c))
+        const foreignKeys = columns.filter(c => c.references)
+            .map(c => this.sqlForeignKeyDefinition(meta.table, c))
+        const definitions = [
+            sqlColumns,
+            foreignKeys,
+        ].filter(x => x.length)
+            .map(x => x.join(',\n  '))
+            .join(',\n  ')
+        let sql = `CREATE TABLE ${this.dialect.quoteTable(meta.tableName)} (\n  ${definitions}\n);\n`
         const indexes = columns.filter(c => c.index)
             .map(c => `${this.sqlIndexDefinition(meta.table, c)};`);
         if (indexes.length > 0) {

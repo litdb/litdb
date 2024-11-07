@@ -1,5 +1,4 @@
 import type { ColumnType, DialectTypes, Driver } from "../types"
-import { DataType } from "../model"
 import { Sqlite } from "../sqlite/driver"
 import { MySqlDialect } from "./dialect"
 import { MySqlSchema } from "./schema"
@@ -8,29 +7,30 @@ import { Schema } from "../schema"
 
 class MySqlTypes implements DialectTypes {
     // use as-is
-    native = [
-        DataType.INTEGER, DataType.SMALLINT, DataType.BIGINT, // INTEGER
-        DataType.REAL, DataType.DOUBLE, DataType.FLOAT, DataType.DECIMAL,  // REAL
-        DataType.NUMERIC, DataType.DECIMAL, DataType.MONEY, //NUMERIC 
-        DataType.BOOLEAN, 
-        DataType.DATE, DataType.DATETIME,
-        DataType.TIME, DataType.TIMEZ, DataType.TIMESTAMP, DataType.TIMESTAMPZ, DataType.INTERVAL,
-        DataType.UUID, DataType.JSON, DataType.JSONB, DataType.XML, 
-        DataType.BLOB, DataType.BYTES, DataType.BIT,
+    native:ColumnType[] = [
+        "INTEGER", "SMALLINT", "BIGINT", // INTEGER
+        "REAL", "DOUBLE", "FLOAT", "DECIMAL",  // REAL
+        "NUMERIC", "DECIMAL", "MONEY", //NUMERIC 
+        "BOOLEAN", 
+        "DATE", "DATETIME",
+        "TIME", "TIMEZ", "TIMESTAMP", "TIMESTAMPZ", "INTERVAL",
+        "UUID", "JSON", "JSONB", "XML", 
+        "BLOB", "BYTES", "BIT",
     ]
     // use these types instead
     map : Record<string,ColumnType[]> = {
-        [DataType.DOUBLE]: [DataType.REAL],
-        [DataType.MONEY]: [DataType.DECIMAL],
-        [DataType.TIME]: [DataType.TIMEZ],
-        [DataType.TIMESTAMP]: [DataType.TIMESTAMPZ],
-        [DataType.INTEGER]: [DataType.INTERVAL],
-        [DataType.JSON]: [DataType.JSONB],
-        [DataType.TEXT]: [DataType.XML],
-        "BINARY": [DataType.BYTES],
-        "BINARY(1)": [DataType.BIT],
+        "DOUBLE":        ["REAL"],
+        "TIME":          ["TIMEZ"],
+        "TIMESTAMP":     ["TIMESTAMPZ"],
+        "INTEGER":       ["INTERVAL"],
+        "JSON":          ["JSONB"],
+        "TEXT":          ["XML"],
+        "BINARY":        ["BYTES"],
+        "BINARY(1)":     ["BIT"],
+        "DECIMAL(15,2)": ["MONEY"],
     }
 }
+//
 
 export class MySql extends Sqlite
 {

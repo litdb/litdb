@@ -1,43 +1,43 @@
-import { DataType, table, column, DefaultValues, Table } from "../src"
+import { table, column, DefaultValues, Table } from "../src"
 
 @table()
 export class Contact {
     constructor(data?: Partial<Contact>) { Object.assign(this, data) }
 
-    @column(DataType.INTEGER, { autoIncrement: true })
+    @column("INTEGER", { autoIncrement: true })
     id = 0
     
-    @column(DataType.TEXT, { required: true })
+    @column("TEXT", { required: true })
     firstName = ''
     
-    @column(DataType.TEXT, { required: true })
+    @column("TEXT", { required: true })
     lastName = ''
     
-    @column(DataType.INTEGER)
+    @column("INTEGER")
     age?: number
     
-    @column(DataType.TEXT, { required: true })
+    @column("TEXT", { required: true })
     email = ''
     
-    @column(DataType.TEXT)
+    @column("TEXT")
     phone?: string
     
-    @column(DataType.TEXT)
+    @column("TEXT")
     address?: string
     
-    @column(DataType.TEXT)
+    @column("TEXT")
     city?: string
     
-    @column(DataType.TEXT)
+    @column("TEXT")
     state?: string
     
-    @column(DataType.TEXT)
+    @column("TEXT")
     postCode?: string
     
-    @column(DataType.DATETIME, { defaultValue:DefaultValues.NOW })
+    @column("DATETIME", { defaultValue:DefaultValues.NOW })
     createdAt = new Date(2025,1,1)
     
-    @column(DataType.DATETIME, { defaultValue:DefaultValues.NOW })
+    @column("DATETIME", { defaultValue:DefaultValues.NOW })
     updatedAt = new Date(2025,1,1)
 }
 
@@ -48,7 +48,7 @@ export class Order {
     @column("INTEGER", { autoIncrement:true })
     id: number = 0
 
-    @column("INTEGER", { required:true })
+    @column("INTEGER", { required:true, references:{ table:Contact, on:["DELETE","CASCADE"] } })
     contactId: number = 0
 
     @column("INTEGER")
@@ -64,6 +64,12 @@ export class Order {
     total: number = 0
 }
 
+Table(Order, {
+    columns: {
+        contactId: { type:"TEXT", references:{ table:Contact, on:["DELETE","CASCADE"] } }
+    }
+})
+
 @table()
 export class OrderItem {
     @column("INTEGER", { autoIncrement:true })
@@ -72,7 +78,7 @@ export class OrderItem {
     @column("INTEGER", { required:true })
     orderId: number = 0
 
-    @column(DataType.TEXT, { required:true })
+    @column("TEXT", { required:true })
     name: string = ''
 }
 
@@ -81,7 +87,7 @@ export class Freight {
     @column("INTEGER", { autoIncrement:true })
     id: number = 0
 
-    @column(DataType.TEXT, { required:true })
+    @column("TEXT", { required:true })
     name: string = ''
 }
 

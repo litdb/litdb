@@ -10,7 +10,7 @@ import { Schema } from "./schema"
 import { Inspect, Watch } from "./inspect"
 import { pick, omit, toStr, mergeParams, nextParam, snakeCase, isTemplateStrings } from "./utils"
 import { converterFor, DateTimeConverter } from "./converters"
-import { table, column, Table, DefaultValues, DataType, } from "./model"
+import { table, column, Table, DefaultValues, } from "./model"
 import { Sqlite } from "./sqlite/driver"
 import { SqliteDialect } from "./sqlite/dialect"
 import { MySql } from "./mysql/driver"
@@ -56,7 +56,6 @@ export {
   column,
   Table,
   DefaultValues,
-  DataType,
   ColumnDefinition, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, TypeConverter,
   Sqlite, SqliteDialect, SqliteSchema,             sqlite,
   MySql, MySqlDialect, MySqlSchema,                mysql,

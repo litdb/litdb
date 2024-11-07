@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import type { ReflectMeta } from '../src'
-import { Sqlite, DataType, Meta } from '../src'
+import { Sqlite, Meta } from '../src'
 import { Contact } from './data'
 
 const schema = Sqlite.schema
@@ -65,13 +65,13 @@ describe ('SQLite Create Table Tests', () => {
         const id = $props.find(c => c.name === 'id')!.column!
         expect(id.primaryKey).toBe(true)
         expect(id.autoIncrement).toBe(true)
-        expect(id.type).toBe(DataType.INTEGER)
+        expect(id.type).toBe("INTEGER")
 
         const firstName = $props.find(c => c.name === 'firstName')?.column!
-        expect(firstName.type).toBe(DataType.TEXT)
+        expect(firstName.type).toBe("TEXT")
         expect(firstName.required).toBe(true)
 
         const createdAt = $props.find(c => c.name === 'createdAt')?.column!
-        expect(createdAt.type).toBe(DataType.DATETIME)
+        expect(createdAt.type).toBe("DATETIME")
     })
 })

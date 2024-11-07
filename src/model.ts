@@ -1,4 +1,4 @@
-import { ColumnType, Constructor } from "./types";
+import { ColumnConfig, ColumnType, Constructor, FluentTableDefinition } from "./types";
 
 // @table annotation
 export function table(options?: {
@@ -13,20 +13,10 @@ export function table(options?: {
 }
 
 // @column annotation
-export function column(type:ColumnType|symbol, options?: {
-    alias?: string
-    primaryKey?: boolean
-    autoIncrement?: boolean
-    required?: boolean
-    precision?: number
-    scale?: number
-    unique?: boolean
-    index?: boolean
-    defaultValue?: string
-}) {
+export function column(type:ColumnType|symbol, options?: ColumnConfig) {
     return function (target: any, propertyKey: string) {
         const column = Object.assign({}, options, { type:type, name:options?.alias ?? propertyKey })
-        if (propertyKey === 'id') column.primaryKey = true
+        if (propertyKey === 'id' || options?.autoIncrement) column.primaryKey = true
         if (!target.constructor.$id) target.constructor.$id = Symbol(target.constructor.name)
         const props = (target.constructor.$props ?? (target.constructor.$props=[]))
         let prop = props.find((x:any) => x.name === propertyKey)
@@ -42,7 +32,7 @@ export function column(type:ColumnType|symbol, options?: {
 }
 
 // Fluent definition to apply @column and @table to any JS class
-export function Table<T extends Constructor<any>>(cls:T, definition: TableDefinition<T>) {
+export function Table<T extends Constructor<any>>(cls:T, definition: FluentTableDefinition<T>) {
     if (!definition) throw new Error('Table definition is required')
 
     const meta = cls as any
@@ -56,6 +46,7 @@ export function Table<T extends Constructor<any>>(cls:T, definition: TableDefini
         const column = (definition.columns as any)[name]
         if (!column) throw new Error(`Column definition for ${name} is missing`)
         if (!column.type) throw new Error(`Column type for ${name} is missing`)
+        if (name === 'id' || column?.autoIncrement) column.primaryKey = true
         let prop = props.find((x:any) => x.name === name)
         if (!prop) {
              prop = { name }
@@ -68,70 +59,6 @@ export function Table<T extends Constructor<any>>(cls:T, definition: TableDefini
         }
     })
     return cls
-}
-
-// Table configuration interface
-interface TableDefinition<T extends Constructor<any>> {
-    table?: TableConfig
-    columns: ColumnsConfig<InstanceType<T>>
-}
-interface TableConfig {
-    alias?: string
-}
-interface ColumnConfig {
-    alias?: string
-    type: ColumnType|symbol
-    primaryKey?: boolean
-    autoIncrement?: boolean
-    required?: boolean
-    precision?: number
-    scale?: number
-    unique?: boolean
-    index?: boolean
-    defaultValue?: string
-}
-
-// Helper type to ensure all properties in columns are keys of T
-type ColumnsConfig<T> = {
-    [K in keyof Partial<T>]: ColumnConfig
-}
-
-// Optional string enums containing constants for all values of `ColumnType`
-export enum DataType {
-    INTEGER = 'INTEGER',
-    SMALLINT = 'SMALLINT',
-    BIGINT = 'BIGINT',
-
-    DECIMAL = 'DECIMAL',
-    NUMERIC = 'NUMERIC',
-    REAL = 'REAL',
-    FLOAT = 'FLOAT',
-    DOUBLE = 'DOUBLE',
-    MONEY = 'MONEY',
-
-    DATE = 'DATE',
-    DATETIME = 'DATETIME',
-    TIME = 'TIME',
-    TIMEZ = 'TIMEZ',
-    TIMESTAMP = 'TIMESTAMP',
-    TIMESTAMPZ = 'TIMESTAMPZ',
-
-    INTERVAL = 'INTERVAL',
-    BOOLEAN = 'BOOLEAN',
-
-    UUID = 'UUID',
-    BLOB = 'BLOB',
-    BYTES = 'BYTES',
-    BIT = 'BIT',
-
-    TEXT = 'TEXT',
-    VARCHAR = 'VARCHAR',
-    NVARCHAR = 'NVARCHAR',    
-    CHAR = 'CHAR',
-    NCHAR = 'NCHAR',
-    JSON = 'JSON',
-    JSONB = 'JSONB',
-    XML = 'XML',
 }
 
 // Constants that can be substituted per RDBMS Driver

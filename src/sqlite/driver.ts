@@ -1,7 +1,7 @@
 import type { Driver, NamingStrategy, TypeConverter, DialectTypes, ColumnType, Dialect } from "../types"
 import { ConnectionBase, DefaultStrategy } from "../connection"
 import { converterFor, DateTimeConverter } from "../converters"
-import { DataType, DefaultValues } from "../model"
+import { DefaultValues } from "../model"
 import { Sql } from "../sql"
 import { SqliteDialect } from "./dialect"
 import { Schema } from "../schema"
@@ -9,20 +9,20 @@ import { SqliteSchema } from "./schema"
 
 export class SqliteTypes implements DialectTypes {
     // use as-is
-    native = [
-        DataType.INTEGER, DataType.SMALLINT, DataType.BIGINT, // INTEGER
-        DataType.REAL, DataType.DOUBLE, DataType.FLOAT,  // REAL
-        DataType.NUMERIC, DataType.DECIMAL, DataType.BOOLEAN, DataType.DATE, DataType.DATETIME, //NUMERIC
+    native:ColumnType[] = [
+        "INTEGER", "SMALLINT", "BIGINT", // INTEGER
+        "REAL", "DOUBLE", "FLOAT",  // REAL
+        "NUMERIC", "DECIMAL", "BOOLEAN", "DATE", "DATETIME", //NUMERIC
     ]
     // use these types instead
     map: Record<string,ColumnType[]> = {
-        INTEGER: [DataType.INTERVAL],
-        REAL:    [DataType.REAL],
-        NUMERIC: [DataType.DECIMAL, DataType.NUMERIC, DataType.MONEY],
-        BLOB:    [DataType.BLOB, DataType.BYTES, DataType.BIT],
+        INTEGER: ["INTERVAL", "MONEY"],
+        REAL:    ["REAL"],
+        NUMERIC: ["DECIMAL"],
+        BLOB:    ["BLOB", "BYTES", "BIT"],
         TEXT: [
-            DataType.UUID, DataType.JSON, DataType.JSONB, DataType.XML, 
-            DataType.TIME, DataType.TIMEZ, DataType.TIMESTAMP, DataType.TIMESTAMPZ,
+            "UUID", "JSON", "JSONB", "XML", 
+            "TIME", "TIMEZ", "TIMESTAMP", "TIMESTAMPZ",
         ],
     }
 }
@@ -54,7 +54,7 @@ export class Sqlite implements Driver
     types: DialectTypes
 
     converters: { [key: string]: TypeConverter } = {
-        ...converterFor(DateTimeConverter.instance, DataType.DATE, DataType.DATETIME, DataType.TIMESTAMP, DataType.TIMESTAMPZ),
+        ...converterFor(DateTimeConverter.instance, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
     }
 
     constructor() {

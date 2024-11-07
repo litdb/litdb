@@ -1,7 +1,7 @@
-import type { ColumnDefinition, Driver, Fragment, TableDefinition, DialectTypes } from "../types"
-import { DataType } from "../model"
+import type { ColumnDefinition, Driver, Fragment, TableDefinition, DialectTypes, ColumnType } from "../types"
 import { Sql } from "../sql"
 import { Schema } from "../schema"
+import { Meta } from "../meta"
 
 export class SqliteSchema extends Schema {
 
@@ -22,13 +22,32 @@ export class SqliteSchema extends Schema {
         return `CREATE ${unique} ${name} ON ${this.dialect.quoteTable(table.name)} (${this.dialect.quoteColumn(column.name)})`
     }
 
+    sqlForeignKeyDefinition(table: TableDefinition, column: ColumnDefinition): string {
+        const ref = column.references
+        if (!ref) return ''
+        const $ = this.driver.$
+        const refMeta = Array.isArray(ref.table)
+            ? Meta.assertMeta(ref.table[0])
+            : Meta.assertMeta(ref.table)
+        const refKeys = Array.isArray(ref.table)
+            ? Array.isArray(ref.table[1]) 
+                ? ref.table[1].map(x => $.quoteColumn(x)).join(',') 
+                : $.quoteColumn(ref.table[1])
+            : refMeta.columns.filter(x => x.primaryKey).map(x => $.quoteColumn(x.name)).join(',')
+        let sql = `FOREIGN KEY (${$.quoteColumn(column.name)}) REFERENCES ${$.quoteTable(refMeta.tableName)}${refKeys ? '(' + refKeys + ')' : ''}`
+        if (ref.on) {
+            sql += ` ON ${ref.on[0]} ${ref.on[1]}`
+        }
+        return sql
+    }
+
     sqlColumnDefinition(column: ColumnDefinition): string {
-        let dataType = column.type as DataType
-        let type = this.driver.types.native.includes(dataType) ? dataType : undefined
+        let dataType = column.type
+        let type = this.driver.types.native.includes(dataType as ColumnType) ? dataType : undefined
         if (!type) {
             for (const [sqliteType, typeMapping] of Object.entries(this.driver.types.map)) {
-                if (typeMapping.includes(dataType)) {
-                    type = sqliteType as DataType
+                if (typeMapping.includes(dataType as ColumnType)) {
+                    type = sqliteType
                     break
                 }
             }

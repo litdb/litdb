@@ -6,19 +6,19 @@ import { str } from './utils'
 describe.only('Inspect tests', () => {
     it ('does log objects', () => {
         
-        expect(str(Inspect.dump(contacts))).toStartWith(str(`[ {
-            id: 1,
-            firstName: John,
-            lastName: Doe,
-            email: john.doe@example.com,
-            createdAt: 2025-02-01T00:00:00.000Z,
-            updatedAt: 2025-02-01T00:00:00.000Z,
-            age: 27,
-            phone: 123-456-7890,
-            address: 123 Main St,
-            city: New York,
-            state: NY,
-            postCode: 12345
+        expect(str(Inspect.dump(contacts))).toStartWith(str(`[ { 
+            "id": 1, 
+            "firstName": "John", 
+            "lastName": "Doe", 
+            "email": "john.doe@example.com", 
+            "createdAt": "2025-02-01T00:00:00.000Z", 
+            "updatedAt": "2025-02-01T00:00:00.000Z", 
+            "age": 27, 
+            "phone": "123-456-7890", 
+            "address": "123 Main St", 
+            "city": "New York", 
+            "state": "NY", 
+            "postCode": "12345" 
         }`))
 
         expect(Inspect.dumpTable(pick(contacts, ['id','firstName','age']))).toEqual(

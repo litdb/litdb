@@ -138,3 +138,7 @@ export function clsName(name:string, ...args:string[]|{ name:string }[]|{ constr
                 : ''
     return `${name}<${Array.from(args).map(argName).join(',')}>`
 }
+
+export function isQuoted(name:string) {
+    return name && (name[0] == '"' || name[0] == '`')
+}

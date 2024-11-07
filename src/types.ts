@@ -86,15 +86,16 @@ export type TypeRefs<Tables extends Constructor<any>[]> = {
     [K in keyof Tables]: TypeRef<InstanceType<Tables[K]>>
 }
 
-export interface TableDefinition {
-    name: string
+export interface TableConfig {
     alias?: string
 }
 
-export interface ColumnDefinition {
+export interface TableDefinition extends TableConfig {
     name: string
+}
+
+export interface ColumnConfig {
     alias?: string
-    type: string
     primaryKey?: boolean
     autoIncrement?: boolean
     required?: boolean
@@ -103,6 +104,28 @@ export interface ColumnDefinition {
     unique?: boolean
     index?: boolean
     defaultValue?: string
+    references?: ColumnReference
+}
+
+export interface ColumnReference { 
+    table:Constructor<any>|[Constructor<any>, string|string[]]
+    on?:["DELETE"|"UPDATE", "NO ACTION"|"RESTRICT"|"SET NULL"|"SET DEFAULT"|"CASCADE"] 
+}
+
+export interface ColumnDefinition extends ColumnConfig {
+    name: string
+    type: string
+}
+
+// Table configuration interface
+export interface FluentTableDefinition<T extends Constructor<any>> {
+    table?: TableConfig
+    columns: ColumnsConfig<InstanceType<T>>
+}
+
+// Helper type to ensure all properties in columns are keys of T
+type ColumnsConfig<T> = {
+    [K in keyof Partial<T>]: ColumnConfig & { type: ColumnType|symbol }
 }
 
 export type Changes = { changes: number; lastInsertRowid: number | bigint; }
