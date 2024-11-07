@@ -7,7 +7,7 @@ import type {
 import { Meta, type } from "./meta"
 import { assertSql } from "./schema"
 import { Sql } from "./sql"
-import { asRef, asType, clsName, IS, leftPart, nextParam, toStr } from "./utils"
+import { asRef, asType, clsName, IS, leftPart, mergeParams, nextParam, toStr } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 
 // minify
@@ -318,21 +318,8 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         }
     }
 
-    protected mergeParams(f:Fragment) {
-        let sql = f.sql
-        if (f.params && IS.rec(f.params)) {
-            for (const [key, value] of Object.entries(f.params)) {
-                const exists = key in this.params && key[0] === '_' && !isNaN(parseInt(key.substring(1)))
-                if (exists) {
-                    const nextvalue = nextParam(this.params)
-                    sql = sql.replaceAll(`$${key}`,`$${nextvalue}`)
-                    this.params[nextvalue] = value
-                } else {
-                    this.params[key] = value
-                }
-            }
-        }
-        return sql
+    protected mergeParams(f:Fragment) {        
+        return mergeParams(this.params, f)
     }
 
     private addWhere(condition:string, sqlOp:string, values:any, op?:string) {
@@ -592,6 +579,8 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     limit(take?:number, skip?:number) {
         this._take = take == null ? undefined : take
         this._skip = skip == null ? undefined : skip
+        if ('limit' in this.params) delete this.params['limit']
+        if ('offset' in this.params) delete this.params['offset']
         if (take == null && skip == null) {
             this._limit = undefined
         } else {

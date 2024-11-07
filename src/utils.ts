@@ -80,27 +80,38 @@ export function toStr(value:any) {
         : `${value}`
 }
 
-export function nextParam(params:Record<string,any>) {
-    const positionalParams = Object.keys(params)
+export function nextParam(params:Record<string,any>) { return '_' + nextParamVal(params) }
+export function nextParamVal(params:Record<string,any>) {
+    const positional = Object.keys(params)
         .map(x => x[0] === '_' ? parseInt(x.substring(1)) : NaN).filter(x => !isNaN(x))
-    return '_' + (positionalParams.length == 0
+    return (positional.length == 0
         ? 1
-        : Math.max(...positionalParams) + 1)
+        : Math.max(...positional) + 1)
 }
 
 export function mergeParams(params:Record<string,any>, f:Fragment) {
     let sql = f.sql
-    if (f.params && IS.rec(f.params)) {
+    const hasConflicts = Object.keys(f.params).some((x:string) => x in params)
+    if (!hasConflicts) {
         for (const [key, value] of Object.entries(f.params)) {
-            const exists = key in params && key[0] === '_' && !isNaN(parseInt(key.substring(1)))
-            if (exists) {
-                const nextvalue = nextParam(params)
-                sql = sql.replaceAll(`$${key}`,`$${nextvalue}`)
-                params[nextvalue] = value
-            } else {
-                params[key] = value
-            }
+            params[key] = value
         }
+        return sql
+    }
+
+    // create new param mappings
+    const startIndex = nextParamVal(params)
+    const newMapping:Record<string,any> = {}
+    let i = 0
+    for (const [key, _] of Object.entries(f.params)) {
+        newMapping[key] = '_' + (startIndex + i++)
+    }
+
+    // apply substitution in reverse
+    for (const [key, value] of Object.entries(f.params).reverse()) {
+        const nextValue = newMapping[key]
+        sql = sql.replaceAll(`$${key}`,`$${nextValue}`)
+        params[nextValue] = value
     }
     return sql
 }
@@ -122,35 +133,35 @@ export function asRef<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilde
 }
 
 export class IS {
-    // Array.isArray
+    /** Array.isArray */
     static arr(o:any):o is any[] {
         return Array.isArray(o)
     }
-    // typeof 'object'
+    /** typeof 'object' -> is Record<string, any> */
     static rec(o:any):o is Record<string, any> {
         return typeof o == 'object'
     }
-    // typeof 'object'
+    /** typeof 'object' -> is any */
     static obj(o:any):o is any {
         return typeof o == 'object'
     }
-    // typeof 'function'
+    /** typeof 'function' */
     static fn(o:any):o is Function { //((...args:any[]) => any)
         return typeof o == 'function'
     }
-    // typeof 'string'
+    /** typeof 'string' */
     static str(o:any):o is string {
         return typeof o == 'string'
     }
-    // typeof 'number'
+    /** typeof 'number' */
     static num(o:any):o is number {
         return typeof o == 'number'
     }
-    // typeof 'symbol'
+    /** typeof 'symbol' */
     static sym(o:any):o is symbol {
         return typeof o == 'symbol'
     }
-    // TemplateStringsArray
+    /** TemplateStringsArray */
     static tpl(o: any): o is TemplateStringsArray {
         return IS.arr(o) && 'raw' in o
     }

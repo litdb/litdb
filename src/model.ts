@@ -43,7 +43,7 @@ export function Table<T extends Constructor<any>>(cls:T, definition: FluentTable
     meta.$type.table = definition.table ?? { }
     meta.$type.table.name ??= cls.name
     const props = (meta.$props ?? (meta.$props=[]))
-    Object.keys(definition.columns).forEach(name => {
+    Object.keys(definition.columns ?? {}).forEach(name => {
         const column = (definition.columns as any)[name]
         if (!column) throw new Error(`Column definition for ${name} is missing`)
         if (!column.type) throw new Error(`Column type for ${name} is missing`)

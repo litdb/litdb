@@ -41,6 +41,17 @@ export class Sql
                     if (IS.sym(value)) {
                         // include symbol literal as-is
                         sb += value.description ?? ''
+                    } else if (IS.arr(value)) {
+                        // expand arrays into multiple params
+                        let sbIn = ''
+                        for (const item of value) {
+                            const paramIndex = Object.keys(sqlParams).length + 1
+                            const name = `_${paramIndex}`
+                            if (sbIn.length) sbIn += ','
+                            sbIn += `$${name}`
+                            sqlParams[name] = item
+                        }
+                        sb += sbIn
                     } else if (IS.rec(value) && value.$ref) {
                         // if referencing proxy itself, return its quoted tableName
                         sb += dialect.quoteTable(Meta.assert(value.$ref.cls).tableName)

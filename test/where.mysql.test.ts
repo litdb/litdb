@@ -252,4 +252,50 @@ describe('MySql WHERE Tests', () => {
         assert($.from(Contact).where($`${sId} = ${id}`))
     })
 
+    it (`Expands array values into multiple params`, () => {
+
+        const ids = [10,20,30]
+        
+        var { sql, params } = $.from(Contact).where(c => $`${c.id} IN (${ids})`).build()
+
+        expect(str(sql)).toEndWith(`FROM ${qContact} WHERE ${qId} IN ($_1,$_2,$_3)`)
+        expect(params).toEqual({
+            _1: 10,
+            _2: 20,
+            _3: 30,
+        })
+
+        const names = ['John','Jane','Bob']
+        var { sql, params } = $.from(Contact)
+            .where(c => $`${c.id} >= ${ids[1]}`)
+            .and(c => $`${c.firstName} IN (${names})`).build()
+
+        expect(str(sql)).toEndWith(`FROM ${qContact} WHERE ${qId} >= $_1 AND ${qFirstName} IN ($_2,$_3,$_4)`)
+            expect(params).toEqual({
+                _1: 20,
+                _2: 'John',
+                _3: 'Jane',
+                _4: 'Bob',
+            })
+
+        const exists = $.from(Contact).where(c => $`${c.id} IN (${ids})`).select`1`
+        var { sql, params } = $.from(Contact)
+            .where(c => $`${c.id} >= ${ids[1]}`)
+            .and`EXISTS (${exists})`
+            .and(c => $`${c.firstName} = ${'Max'}`).build()
+
+        expect(str(sql)).toEndWith(str(`FROM ${qContact} 
+            WHERE ${qId} >= $_1 
+              AND EXISTS (SELECT 1 FROM ${qContact} WHERE ${qId} IN ($_2,$_3,$_4)) 
+              AND ${qFirstName} = $_5`))
+
+              expect(params).toEqual({
+            _1: 20,
+            _2: 10,
+            _3: 20,
+            _4: 30,
+            _5: 'Max',
+        })
+    })
+
 })
