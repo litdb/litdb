@@ -3,7 +3,7 @@ import type {
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta } from "./meta"
-import { asRef, asType, isTemplateStrings, mergeParams } from "./utils"
+import { asRef, asType, IS, mergeParams } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
 import { Schema } from "./schema"
@@ -30,7 +30,7 @@ export class Sql
 
     public static create(dialect:Dialect) {
         function $(strings: TemplateStringsArray|string, ...params: any[]) : Fragment {
-            if (isTemplateStrings(strings)) {
+            if (IS.tpl(strings)) {
                 // console.log(`raw`, strings.raw, strings, params)
                 let sb = ''
                 const sqlParams:Record<string,any> = {}
@@ -38,17 +38,17 @@ export class Sql
                     sb += strings[i]
                     if (i >= params.length) continue
                     const value = params[i]
-                    if (typeof value == 'symbol') {
+                    if (IS.sym(value)) {
                         // include symbol literal as-is
                         sb += value.description ?? ''
-                    } else if (typeof value == 'object' && value.$ref) {
+                    } else if (IS.rec(value) && value.$ref) {
                         // if referencing proxy itself, return its quoted tableName
-                        sb += dialect.quoteTable(Meta.assertMeta(value.$ref.cls).tableName)
-                    } else if (typeof value == 'object' && typeof value.build == 'function') {
+                        sb += dialect.quoteTable(Meta.assert(value.$ref.cls).tableName)
+                    } else if (IS.obj(value) && IS.fn(value.build)) {
                         // Merge params of SqlBuilder and append SQL
                         const frag = (value as SqlBuilder).build()
                         sb += mergeParams(sqlParams, frag).replaceAll('\n', '\n      ')
-                    } else if (typeof value == 'object' && typeof value.sql == 'string') {
+                    } else if (IS.obj(value) && IS.str(value.sql)) {
                         // Merge params of Sql Fragment and append SQL
                         const frag = value as Fragment
                         sb += mergeParams(sqlParams, frag).replaceAll('\n', '\n      ')
@@ -60,7 +60,7 @@ export class Sql
                     }
                 }
                 return ({ sql:sb, params:sqlParams })
-            } else if (typeof strings === 'string') {
+            } else if (IS.str(strings)) {
                 return ({ sql:strings, params:params[0] })
             } else throw new Error(`sql(${typeof strings}) is invalid`)
         }
@@ -76,12 +76,12 @@ export class Sql
             return dialect.quoteColumn(p.name)
         }
         $.ref = function<Table extends Constructor<any>>(cls:Table, as?:string) : TypeRef<InstanceType<Table>> {
-            const meta = Meta.assertMeta(cls)
+            const meta = Meta.assert(cls)
             if (as == null)
                 as = dialect.quoteTable(meta.tableName)
             const get = (target: { prefix:string, meta:Meta }, key:string|symbol) => key == '$ref' 
                 ? { cls, as }
-                : Symbol(target.prefix + quoteProp(meta, typeof key == 'string' ? key : key.description!))
+                : Symbol(target.prefix + quoteProp(meta, IS.str(key) ? key : key.description!))
             const p = new Proxy({ prefix: as ? as + '.' : '', meta }, { get })
             return p as any as TypeRef<InstanceType<Table>>
         }
@@ -89,7 +89,7 @@ export class Sql
             return classes.map(cls => $.ref(cls)) as ConstructorToTypeRef<T>
         }
         $.fragment = function(sql:string|Fragment, params:Record<string,any>={}): Fragment {
-            return typeof sql == 'object' 
+            return IS.rec(sql)
                 ? ({ sql: mergeParams(params, sql), params }) 
                 : ({ sql, params })
         }
@@ -97,13 +97,13 @@ export class Sql
         $.from = function<Table extends Constructor<any>>(table:Table | TypeRef<InstanceType<Table>>, alias?:string) {
             const cls = asType(table)
             const ref = asRef(table) ?? $.ref(table, alias ?? '')
-            return new SelectQuery<[Table]>($, [cls], [Meta.assertMeta(cls)], [ref])
+            return new SelectQuery<[Table]>($, [cls], [Meta.assert(cls)], [ref])
         }
         $.update = function<Table extends Constructor<any>>(table:Table) { 
-            return new UpdateQuery<[Table]>($, [table], [Meta.assertMeta(table)], [$.ref(table,'')]) 
+            return new UpdateQuery<[Table]>($, [table], [Meta.assert(table)], [$.ref(table,'')]) 
         }
         $.deleteFrom = function<Table extends Constructor<any>>(table:Table) { 
-            return new DeleteQuery<[Table]>($, [table], [Meta.assertMeta(table)], [$.ref(table,'')]) 
+            return new DeleteQuery<[Table]>($, [table], [Meta.assert(table)], [$.ref(table,'')]) 
         }
     
         $.join = function<Tables extends Constructor<any>[]>(...tables:Tables) {

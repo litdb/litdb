@@ -6,7 +6,7 @@ import type {
 } from "../../src"
 import { 
     Sql, DbConnection, NamingStrategy, SyncDbConnection, DefaultValues, converterFor, DateTimeConverter, 
-    DialectTypes, SqliteDialect, DefaultStrategy, Schema, isTemplateStrings,
+    DialectTypes, SqliteDialect, DefaultStrategy, Schema, IS,
     SqliteSchema,
 } from "../../src"
 import { Constructor } from "../../src/types"
@@ -251,7 +251,7 @@ class SqliteConnection implements Connection, SyncConnection {
 
     prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
-        if (isTemplateStrings(sql)) {
+        if (IS.tpl(sql)) {
             let sb = ''
             for (let i = 0; i < sql.length; i++) {
                 sb += sql[i]
@@ -267,7 +267,7 @@ class SqliteConnection implements Connection, SyncConnection {
 
     prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
-        if (isTemplateStrings(sql)) {
+        if (IS.tpl(sql)) {
             let sb = ''
             for (let i = 0; i < sql.length; i++) {
                 sb += sql[i]

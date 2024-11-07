@@ -1,4 +1,4 @@
-import { toStr, uniqueKeys } from "./utils"
+import { IS, toStr, uniqueKeys } from "./utils"
 
 export function alignLeft(str:string, len:number, pad:string = ' ') : string {
     if (len < 0) return ''
@@ -23,7 +23,7 @@ export function alignRight(str:string, len:number, pad:string = ' ') : string {
 export function alignAuto(obj:any, len:number, pad:string = ' ') : string {
     let str = `${obj}`
     if (str.length <= len) {
-    return  typeof obj === "number"
+    return IS.num(obj)
         ? alignRight(str, len, pad)
         : alignLeft(str, len, pad)
     }
@@ -33,8 +33,8 @@ export function alignAuto(obj:any, len:number, pad:string = ' ') : string {
 export class Inspect {
   
     static dump(obj:any) : string {
-        if (typeof obj == "object") {
-            if (typeof obj.build == "function") {
+        if (IS.rec(obj)) {
+            if (IS.fn(obj.build)) {
                 obj = obj.build()
             }
             if ("sql" in obj && "params" in obj) {
@@ -99,10 +99,10 @@ export function Watch(fn:(() => Record<string,any>)|(() => void)) {
         for (const key in results) {
             console.log(`${key}:`)
             const val = results[key]
-            if (Array.isArray(val)) {
+            if (IS.arr(val)) {
                 console.table(val)
             } else {
-                if (typeof val != "object")
+                if (!IS.rec(val))
                     console.log(toStr(val).trim())
                 else
                     console.log(Inspect.dump(val))

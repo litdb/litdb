@@ -27,8 +27,8 @@ export class SqliteSchema extends Schema {
         if (!ref) return ''
         const $ = this.driver.$
         const refMeta = Array.isArray(ref.table)
-            ? Meta.assertMeta(ref.table[0])
-            : Meta.assertMeta(ref.table)
+            ? Meta.assert(ref.table[0])
+            : Meta.assert(ref.table)
         const refKeys = Array.isArray(ref.table)
             ? Array.isArray(ref.table[1]) 
                 ? ref.table[1].map(x => $.quoteColumn(x)).join(',') 

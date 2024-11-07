@@ -3,7 +3,7 @@ import { sqlite as $ } from '../src'
 import { Contact, Order, OrderItem } from './data'
 import { str } from './utils'
 
-describe.only('SQLite SUB SELECT Tests', () => {
+describe('SQLite SUB SELECT Tests', () => {
 
     it ('Can embed EXISTS builder on Contact', () => {
         const contactId = 1

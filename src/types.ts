@@ -60,7 +60,6 @@ export type ColumnType = 'INTEGER' | 'SMALLINT' | 'BIGINT'
     | 'UUID' | 'BLOB' | 'BYTES' | 'BIT'
     | 'TEXT' | 'VARCHAR' | 'NVARCHAR' | 'CHAR' | 'NCHAR' | 'JSON' | 'JSONB' | 'XML'
 
-
 export type DialectTypes = {
     native: ColumnType[]
     map:    Record<string,ColumnType[]>
@@ -207,7 +206,7 @@ export interface SyncConnection {
         : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 }
 
-export type Fragment = { sql:string, params:Record<string,any> }
+export type Fragment = { sql:string, params:Record<string,unknown> }
 export type IntoFragment<T> = Fragment & { into:T }
 
 export interface SqlBuilder {

@@ -1,4 +1,5 @@
 import { ColumnConfig, ColumnType, Constructor, FluentTableDefinition } from "./types";
+import { IS } from "./utils";
 
 // @table annotation
 export function table(options?: {
@@ -25,7 +26,7 @@ export function column(type:ColumnType|symbol, options?: ColumnConfig) {
             props.push(prop)
         }
         prop.column = column
-        if (typeof prop.column.type == 'symbol') {
+        if (IS.sym(prop.column.type)) {
             prop.column.type = (prop.column.type as symbol).description
         }
     }
@@ -54,7 +55,7 @@ export function Table<T extends Constructor<any>>(cls:T, definition: FluentTable
         }
         prop.column = column
         prop.column.name ??= column.alias ?? name
-        if (typeof prop.column.type == 'symbol') {
+        if (IS.sym(prop.column.type)) {
             prop.column.type = (prop.column.type as symbol).description
         }
     })

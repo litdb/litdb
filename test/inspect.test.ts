@@ -3,7 +3,7 @@ import { sqlite as $, Inspect, pick } from '../src'
 import { Contact, contacts, Order, OrderItem } from './data'
 import { str } from './utils'
 
-describe.only('Inspect tests', () => {
+describe('Inspect tests', () => {
     it ('does log objects', () => {
         
         expect(str(Inspect.dump(contacts))).toStartWith(str(`[ { 

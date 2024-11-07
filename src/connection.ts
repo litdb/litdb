@@ -10,7 +10,7 @@ import type {
     Changes,
 } from "./types"
 import { Sql } from "./sql"
-import { isTemplateStrings, propsWithValues, snakeCase, toStr } from "./utils"
+import { IS, propsWithValues, snakeCase, toStr } from "./utils"
 import { Meta } from "./meta"
 import { Schema, DriverRequired } from "./schema"
 
@@ -95,10 +95,10 @@ export class DbConnection {
     prepare<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
         : [Statement<T,DbBinding[]>|Statement<T,any>, any[]|Record<string,any>]
     {
-        if (isTemplateStrings(strings)) {
+        if (IS.tpl(strings)) {
             let stmt = this.connection.prepare<T,DbBinding[]>(strings, ...params)
             return [stmt, params]
-        } else if (typeof strings == "object") {
+        } else if (IS.str(strings)) {
             if ("build" in strings) {
                 let query = strings.build()
                 let stmt = this.connection.prepare<T,any>(query.sql)
@@ -193,7 +193,7 @@ export class SyncDbConnection {
             return ret
         const cls = row.constructor as ReflectMeta
         let stmt = this.connection.prepareSync<T,any>(this.schema.delete(cls, options))
-        const meta = Meta.assertMeta(cls)
+        const meta = Meta.assert(cls)
         const pkColumns = meta.props.filter(p => p.column?.primaryKey)
         const onlyProps = pkColumns.map(p => p.name)
         const dbRow = this.schema.toDbObject(row, { onlyProps })
@@ -214,27 +214,27 @@ export class SyncDbConnection {
         return stmt.execSync()
     }
 
-    prepareSync<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
+    prepareSync<T>(str: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
         : [SyncStatement<T,DbBinding[]>|SyncStatement<T,any>, any[]|Record<string,any>, T|undefined]
     {
-        if (isTemplateStrings(strings)) {
-            let stmt = this.connection.prepareSync<T,DbBinding[]>(strings, ...params)
+        if (IS.tpl(str)) {
+            let stmt = this.connection.prepareSync<T,DbBinding[]>(str, ...params)
             // console.log('tpl', stmt, strings, params)
             return [stmt, params, undefined]
-        } else if (typeof strings == "object") {
-            if ("build" in strings) {
-                let query = strings.build()
+        } else if (IS.obj(str)) {
+            if ("build" in str) {
+                let query = str.build()
                 let stmt = this.connection.prepareSync<T,any>(query.sql)
                 // console.log('build', stmt, query.params)
                 return [stmt, query.params ?? {}, (query as any).into as T]
-            } else if ("sql" in strings) {
-                let sql = strings.sql
-                let params = (strings as any).params ?? {}
+            } else if ("sql" in str) {
+                let sql = str.sql
+                let params = (str as any).params ?? {}
                 let stmt = this.connection.prepareSync<T,any>(sql)
-                return [stmt, params, (strings as any).into as T]
+                return [stmt, params, (str as any).into as T]
             }
         }
-        throw new Error(`Invalid argument: ${toStr(strings)}`)
+        throw new Error(`Invalid argument: ${toStr(str)}`)
     }
 
     all<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<ReturnType>, ...params: any[]) {

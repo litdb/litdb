@@ -7,8 +7,19 @@ import type {
 import { Meta, type } from "./meta"
 import { assertSql } from "./schema"
 import { Sql } from "./sql"
-import { asRef, asType, clsName, isTemplateStrings, leftPart, nextParam, toStr } from "./utils"
+import { asRef, asType, clsName, IS, leftPart, nextParam, toStr } from "./utils"
 import { alignRight, Inspect } from "./inspect"
+
+// minify
+const V = {
+    join: (cls:any) => {
+        if (!IS.rec(cls) && !IS.fn(cls)) 
+            throw new Error(`invalid argument: ${typeof cls}`)
+    }
+}
+const EX = {
+    arg: (o:any) => { throw new Error(`invalid argument: ${typeof o}`) }
+}
 
 type OnJoin<
     First extends Constructor<any>, 
@@ -29,7 +40,7 @@ function joinOptions<NewTable extends Constructor<any>>(type:JoinType,
         as?:string
         params?:Record<string,any>
     } {
-    if (typeof options == 'object') {
+    if (IS.rec(options)) {
         if ((options as any)?.sql) {
             const { sql, params } = options as Fragment
             return { type, cls, ref, on:sql, params }
@@ -37,7 +48,7 @@ function joinOptions<NewTable extends Constructor<any>>(type:JoinType,
             options = options as JoinParams
             return { type, cls, ref, as:options?.as, on:options?.on, params:options?.params }
         }
-    } else if (typeof options == 'function') {
+    } else if (IS.fn(options)) {
         const builder = options as SqlBuilder
         const { sql, params } = builder.build()
         return { type, cls, on:sql, params }
@@ -105,7 +116,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     protected createInstance<NewTable extends Constructor<any>>(
         table: NewTable, ref?:TypeRef<InstanceType<NewTable>>
     ) : This<typeof this, [...Tables, NewTable]> {
-        const meta = Meta.assertMeta(table)
+        const meta = Meta.assert(table)
         ref = ref ?? this.$.ref(table)
         
         return new (this.constructor as any)(
@@ -156,11 +167,11 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 
         let on = ''
         const qProtected = q as any
-        if (typeof options.on == 'string') {
+        if (IS.str(options.on)) {
             on = options.params
                 ? qProtected.mergeParams({ sql:options.on, params:options.params })
                 : options.on
-        } else if (typeof options.on == 'function') {
+        } else if (IS.fn(options.on)) {
             const refs = q.refs.slice(-2).concat([q.ref])
             const sql = assertSql(options.on.call(q, ...refs))
             on = qProtected.mergeParams(sql)
@@ -191,17 +202,18 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
-        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        V.join(cls)
+        const JO="JOIN"
         return !(cls as any)?.$ref && (cls as any).tables
-            ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, "JOIN")
-            : this.addJoin<NewTable>(joinOptions<NewTable>("JOIN", asType(cls), options, asRef(cls)))
+            ? this.joinBuilder<NewTable>(cls as JoinBuilder<NewTable>, JO)
+            : this.addJoin<NewTable>(joinOptions<NewTable>(JO, asType(cls), options, asRef(cls)))
     }
     leftJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
         options?:{ 
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
-        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        V.join(cls)
         return this.addJoin<NewTable>(joinOptions<NewTable>("LEFT JOIN", asType(cls), options, asRef(cls)))
     }
     rightJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
@@ -209,7 +221,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
-        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        V.join(cls)
         return this.addJoin<NewTable>(joinOptions<NewTable>("RIGHT JOIN", asType(cls), options, asRef(cls)))
     }
     fullJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
@@ -217,7 +229,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
-        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        V.join(cls)
         return this.addJoin<NewTable>(joinOptions<NewTable>("FULL JOIN", asType(cls), options, asRef(cls)))
     }
     crossJoin<NewTable extends Constructor<any>>(cls:NewTable|TypeRef<InstanceType<NewTable>>,
@@ -225,7 +237,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         on?:OnJoin<Last<Tables>, NewTable, First<Tables>>
         as?:string 
     }|SqlBuilder|Fragment) {
-        if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+        V.join(cls)
         return this.addJoin<NewTable>(joinOptions<NewTable>("CROSS JOIN", asType(cls), options, asRef(cls)))
     }
 
@@ -237,9 +249,9 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         if (!options && params.length == 0) {
             this._where.length = 0
             return this
-        } else if (isTemplateStrings(options)) {
+        } else if (IS.tpl(options)) {
             return this.condition('AND', this.$(options as TemplateStringsArray, ...params)) 
-        } else if (typeof options == 'function') {
+        } else if (IS.fn(options)) {
             const sql = assertSql(options.call(this, ...this.refs))
             return this.condition('AND', sql)
         } else {
@@ -251,9 +263,9 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         if (!options && params.length == 0) {
             this._where.length = 0
             return this
-        } else if (Array.isArray(options)) {
+        } else if (IS.arr(options)) {
             return this.condition('OR', this.$(options as TemplateStringsArray, ...params)) 
-        } else if (typeof options == 'function') {
+        } else if (IS.fn(options)) {
             const sql = assertSql(options.call(this, ...this.refs))
             return this.condition('OR', sql)
         } else {
@@ -299,7 +311,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     }
 
     protected addParams(params?:Record<string,any>) {
-        if (params && typeof params == 'object') {
+        if (params && IS.rec(params)) {
             for (const [key, value] of Object.entries(params)) {
                 this.params[key] = value
             }
@@ -308,7 +320,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 
     protected mergeParams(f:Fragment) {
         let sql = f.sql
-        if (f.params && typeof f.params == 'object') {
+        if (f.params && IS.rec(f.params)) {
             for (const [key, value] of Object.entries(f.params)) {
                 const exists = key in this.params && key[0] === '_' && !isNaN(parseInt(key.substring(1)))
                 if (exists) {
@@ -328,7 +340,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         if (!sqlOp) throw new Error('sqlOp is required')
         if (!values) throw new Error('values is required')
         if (op === 'isNull' || op === 'notNull') {
-            if (!Array.isArray(values)) throw new Error(`${op} requires an array of property names, but was: ${toStr(values)}`)
+            if (!IS.arr(values)) throw new Error(`${op} requires an array of property names, but was: ${toStr(values)}`)
             let columnNames = [] as string[]
             for (const key of values) {
                 const prop = this.meta.props.find(x => x.name === key)
@@ -340,13 +352,13 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             this._where.push({ condition, sql })
             //console.log('addWhere', condition, sqlOp, values, op)
             //return
-        } else if (typeof values == 'object') {
+        } else if (IS.rec(values)) {
             for (const [key, value] of Object.entries(values)) {
                 const prop = this.meta.props.find(x => x.name === key)
                 if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
                 if (!prop.column) throw new Error(`Property ${key} is not a column`)
                 const sqlLeft = `${this.$.quoteColumn(prop.column.name)} ${sqlOp}`
-                if (Array.isArray(value)) {
+                if (IS.arr(value)) {
                     let sqlValues = ``
                     for (const v in value) {
                         if (sqlValues) sqlValues += ','
@@ -393,7 +405,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             const sqlAs = refAs && refAs !== quotedTable
                 ? ` ${refAs}`
                 : ''
-            const sqlOn = typeof on == 'string'
+            const sqlOn = IS.str(on)
                 ? ` ON ${on}`
                 : ''
             let joinType = type ?? 'JOIN'
@@ -433,12 +445,12 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         {
             const to:any = {
                 refs:this.refs.map(x => x.$ref).map(r => [
-                    Meta.assertMeta(r.cls).tableName, 
-                    r.as != this.quote(Meta.assertMeta(r.cls).tableName) ? r.as : ''
+                    Meta.assert(r.cls).tableName, 
+                    r.as != this.quote(Meta.assert(r.cls).tableName) ? r.as : ''
                 ].filter(x => !!x).join(' '))
             }
             for (const [key,val] of Object.entries(this)) {
-                if (key[0] == '_' && Array.isArray(val) && val.length) {
+                if (key[0] == '_' && IS.arr(val) && val.length) {
                     to[key.substring(1)] = val
                 }
             }
@@ -484,15 +496,15 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (Array.isArray(options)) {
             const frag = this.$(options as TemplateStringsArray, ...params)
             this._groupBy.push(this.mergeParams(frag))
-        } else if (typeof options == 'object') {
-            const frag = typeof (options as any).build == 'function' 
+        } else if (IS.fn(options)) {
+            const frag = assertSql(options.call(this, ...this.refs))
+            this._groupBy.push(this.mergeParams(frag))
+        } else if (IS.rec(options)) {
+            const frag = IS.fn((options as any).build)
                 ? (options as any).build(this.refs)
                 : assertSql(options)
             this._groupBy.push(this.mergeParams(frag))
-        } else if (typeof options == 'function') {
-            const frag = assertSql(options.call(this, ...this.refs))
-            this._groupBy.push(this.mergeParams(frag))
-        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        } else throw EX.arg(options)
         return this
     }
 
@@ -502,53 +514,56 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (Array.isArray(options)) {
             const frag = this.$(options as TemplateStringsArray, ...params)
             this._having.push(this.mergeParams(frag))
-        } else if (typeof options == 'object') {
-            const frag = typeof (options as any).build == 'function' 
+        } else if (IS.fn(options)) {
+            const frag = assertSql(options.call(this, ...this.refs))
+            this._having.push(this.mergeParams(frag))
+        } else if (IS.rec(options)) {
+            const frag = IS.fn((options as any).build)
                 ? (options as any).build(this.refs)
                 : assertSql(options)
             this._having.push(this.mergeParams(frag))
-        } else if (typeof options == 'function') {
-            const frag = assertSql(options.call(this, ...this.refs))
-            this._having.push(this.mergeParams(frag))
-        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        } else throw EX.arg(options)
         return this
     }
 
     orderBy(options:TemplateStringsArray|Fragment|OrderByBuilder|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) { 
         if (!options && params.length == 0) {
             this._orderBy.length = 0
-        } else if (Array.isArray(options)) {
+        } else if (IS.arr(options)) {
             const frag = this.$(options as TemplateStringsArray, ...params)
             this._orderBy.push(this.mergeParams(frag))
-        } else if (typeof options == 'object') {
-            const frag = typeof (options as any).build == 'function' 
+        } else if (IS.fn(options)) {
+            const frag = assertSql(options.call(this, ...this.refs))
+            this._orderBy.push(this.mergeParams(frag))
+        } else if (IS.rec(options)) {
+            const frag = IS.fn((options as any).build)
                 ? (options as any).build(this.refs)
                 : assertSql(options)
             this._orderBy.push(this.mergeParams(frag))
-        } else if (typeof options == 'function') {
-            const frag = assertSql(options.call(this, ...this.refs))
-            this._orderBy.push(this.mergeParams(frag))
-        } else throw new Error(`Invalid Argument: ${typeof options}`)
+        } else throw EX.arg(options)
         return this
     }
 
     select(options:SelectOptions|TemplateStringsArray|string|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) {
         if (!options && params.length === 0) {
             this._select.length = 0
-        } else if (typeof options === 'string') {  
+        } else if (IS.str(options)) {  
             this._select.push(options)
             if (params.length >= 1) {
                 this.addParams(params[0])
             }
         } else if (Array.isArray(options)) {
             this._select.push(this.mergeParams(this.$(options as TemplateStringsArray, ...params)))
-        } else if (typeof options === 'object') {
+        } else if (IS.fn(options)) {
+            const sql = assertSql(options.call(this, ...this.refs))
+            this._select.push(this.mergeParams(sql))
+        } else if (IS.rec(options)) {
             const o = options as SelectOptions
             if (o.sql) {
                 const frag = o.sql
                 this._select.push(frag.sql)
                 this.addParams(frag.params)
-        }
+            }
             if (o.props) {
                 for (const name of o.props) {
                     const column = this.meta.props.find(x => x.name == name)?.column
@@ -562,9 +577,6 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
                     this._select.push(this.quoteColumn(name))
                 }
             }
-        } else if (typeof options == 'function') {
-            const sql = assertSql(options.call(this, ...this.refs))
-            this._select.push(this.mergeParams(sql))
         } else throw new Error(`Invalid select(${typeof options})`)
         return this
     }
@@ -662,10 +674,13 @@ export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     set(options:TemplateStringsArray|Fragment|{ [K in keyof Partial<InstanceType<First<Tables>>>]: any }|((...params:TypeRefs<Tables>) => Fragment), ...params:any[]) {
         if (!options) {
             this._set.length = 0
-        } if (isTemplateStrings(options)) {
+        } if (IS.tpl(options)) {
             const frag = this.$(options as TemplateStringsArray, ...params)
             this._set.push(this.mergeParams(frag))
-        } else if (typeof options == 'object') {
+        } else if (IS.fn(options)) {
+            const frag = assertSql(options.call(this, ...this.refs))
+            this._set.push(this.mergeParams(frag))
+        } else if (IS.rec(options)) {
             
             if ("sql" in options) {
                 const frag = options as Fragment
@@ -679,11 +694,8 @@ export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
                     this._set.push(`${this.$.quote(prop.column.name)} = $${prop.name}`)
                 }
             }
-        } else if (typeof options == "function") {
-            const frag = assertSql(options.call(this, ...this.refs))
-            this._set.push(this.mergeParams(frag))
         }
-        else throw new Error(`invalid argument: ${typeof options}`)
+        else throw EX.arg(options)
         return this
     }
 

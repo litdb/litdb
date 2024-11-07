@@ -13,7 +13,7 @@ class MySqlTypes implements DialectTypes {
         "NUMERIC", "DECIMAL", "MONEY", //NUMERIC 
         "BOOLEAN", 
         "DATE", "DATETIME",
-        "TIME", "TIMEZ", "TIMESTAMP", "TIMESTAMPZ", "INTERVAL",
+        "TIME", "TIMESTAMP", "INTERVAL",
         "UUID", "JSON", "JSONB", "XML", 
         "BLOB", "BYTES", "BIT",
     ]

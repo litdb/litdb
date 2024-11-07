@@ -9,7 +9,7 @@ describe ('SQLite Create Table Tests', () => {
 
     it ('does get Contact meta', () => {
         //console.log('Contact', Contact, Contact.name, Contact.constructor, Contact.constructor.name)
-        const meta = Meta.assertMeta(Contact)
+        const meta = Meta.assert(Contact)
         expect(meta).toBeDefined()
     })
 

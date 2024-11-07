@@ -90,7 +90,7 @@ export function nextParam(params:Record<string,any>) {
 
 export function mergeParams(params:Record<string,any>, f:Fragment) {
     let sql = f.sql
-    if (f.params && typeof f.params == 'object') {
+    if (f.params && IS.rec(f.params)) {
         for (const [key, value] of Object.entries(f.params)) {
             const exists = key in params && key[0] === '_' && !isNaN(parseInt(key.substring(1)))
             if (exists) {
@@ -106,7 +106,7 @@ export function mergeParams(params:Record<string,any>, f:Fragment) {
 }
 
 export function asType<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>) : NewTable {
-    if (typeof cls != 'object' && typeof cls != 'function') throw new Error(`invalid argument: ${typeof cls}`)
+    if (!IS.obj(cls) && !IS.fn(cls)) throw new Error(`invalid argument: ${typeof cls}`)
     const ref = (cls as any).$ref
         ? cls as TypeRef<InstanceType<NewTable>>
         : undefined
@@ -118,18 +118,49 @@ export function asType<NewTable extends Constructor<any>>(cls:NewTable|JoinBuild
 }
 export function asRef<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>) 
     : TypeRef<InstanceType<NewTable>>|undefined {
-    return typeof cls == 'object' && (cls as any).$ref ? cls as TypeRef<InstanceType<NewTable>> : undefined
+    return IS.obj(cls) && (cls as any).$ref ? cls as TypeRef<InstanceType<NewTable>> : undefined
 }
 
-export function isTemplateStrings(arg: any): arg is TemplateStringsArray {
-    return Array.isArray(arg) && 'raw' in arg;
+export class IS {
+    // Array.isArray
+    static arr(o:any):o is any[] {
+        return Array.isArray(o)
+    }
+    // typeof 'object'
+    static rec(o:any):o is Record<string, any> {
+        return typeof o == 'object'
+    }
+    // typeof 'object'
+    static obj(o:any):o is any {
+        return typeof o == 'object'
+    }
+    // typeof 'function'
+    static fn(o:any):o is Function { //((...args:any[]) => any)
+        return typeof o == 'function'
+    }
+    // typeof 'string'
+    static str(o:any):o is string {
+        return typeof o == 'string'
+    }
+    // typeof 'number'
+    static num(o:any):o is number {
+        return typeof o == 'number'
+    }
+    // typeof 'symbol'
+    static sym(o:any):o is symbol {
+        return typeof o == 'symbol'
+    }
+    // TemplateStringsArray
+    static tpl(o: any): o is TemplateStringsArray {
+        return IS.arr(o) && 'raw' in o
+    }
 }
 
 export function snakeCase(s: string) { return (s || '').replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() }
 
 export function clsName(name:string, ...args:string[]|{ name:string }[]|{ constructor:{ name:string} }[]) {
     if (!args || !args.length) return name
-    const argName = (o:any) => typeof o == "string"
+    const argName = (o:any) => IS.str(o)
         ? o
         : "name" in o 
             ? o.name

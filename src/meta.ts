@@ -1,6 +1,8 @@
 import { ClassParam, ReflectMeta } from "./types"
+import { IS } from "./utils"
 
 export const type = Symbol('type')
+
 
 export class Meta {
     static metadata: { [id:symbol]: Meta } = {}
@@ -20,7 +22,7 @@ export class Meta {
             const name = (table as any)?.name ?? table?.constructor?.name
             if (!name)
                 throw new Error(`Class or constructor function required`)
-            else if (typeof table === 'function' || typeof table.constructor === 'function') 
+            else if (IS.fn(table) || IS.fn(table.constructor)) 
                 throw new Error(`${name} is not a Table class, missing @table?`)
             else
                 throw new Error(`${name} is not a Table class with metadata, missing @table?`)
@@ -39,7 +41,7 @@ export class Meta {
         return cls as ReflectMeta
     }
 
-    static assertMeta(table:ClassParam) : Meta {
+    static assert(table:ClassParam) : Meta {
         const cls = Meta.assertClass(table)
         const id = cls.$id as symbol
         return Meta.metadata[id] ?? (Meta.metadata[id] = new Meta(Meta.assertTable(cls)))

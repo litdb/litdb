@@ -4,6 +4,7 @@ import type {
     ClassInstance, ClassParam, DbBinding, Dialect, Fragment, ReflectMeta, ColumnDefinition, TableDefinition, 
     TypeConverter
 } from "./types"
+import { IS } from "./utils"
 
 type DeleteOptions = {
     /** force delete even with no where clause */
@@ -19,15 +20,15 @@ export const DriverRequiredProxy = new Proxy({}, {
 })
 
 export function assertSql(sql: Fragment|any) {
-    if (typeof sql != 'object' || !sql.sql) {
-        const desc = typeof sql == 'symbol' 
+    if (!IS.rec(sql) || !sql.sql) {
+        const desc = IS.sym(sql)
             ? sql.description
-            : Array.isArray(sql)
+            : IS.arr(sql)
                 ? 'Array'
                 : `${sql}`
         throw new Error(`Expected ${'sql`...`'} fragment, received: ${desc}`)
     }
-    return sql
+    return sql as Fragment
 }
 
 export class Schema {
@@ -47,14 +48,14 @@ export class Schema {
     sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition):string { throw new Error(DriverRequired) }
 
     dropTable(table:ClassParam) {
-        const meta = Meta.assertMeta(table)
+        const meta = Meta.assert(table)
         let sql = `DROP TABLE IF EXISTS ${this.dialect.quoteTable(meta.tableName)}`
         //console.log('Schema.dropTable', sql)
         return sql
     }
 
     createTable(table:ClassParam) {
-        const meta = Meta.assertMeta(table)
+        const meta = Meta.assert(table)
         const columns = meta.columns
         let sqlColumns = columns.map(c => this.sqlColumnDefinition(c))
         const foreignKeys = columns.filter(c => c.references)
@@ -76,7 +77,7 @@ export class Schema {
     }
 
     insert(table:ClassParam, options?:{ onlyProps?:string[] }) {
-        const meta = Meta.assertMeta(table)
+        const meta = Meta.assert(table)
         let props = meta.props.filter(x => x.column!!)
         if (options?.onlyProps) {
             props = props.filter(c => options.onlyProps!.includes(c.name))
@@ -90,7 +91,7 @@ export class Schema {
     }
 
     update(table:ClassParam, options?:{ onlyProps?:string[] }) {
-        const meta = Meta.assertMeta(table)
+        const meta = Meta.assert(table)
         let props = options?.onlyProps
             ? meta.props.filter(c => options.onlyProps!.includes(c.name) || c.column?.primaryKey)
             : meta.props.filter(x => x.column!!)
@@ -115,14 +116,14 @@ export class Schema {
     }
 
     delete(table:ClassParam, options?:DeleteOptions) {
-        const meta = Meta.assertMeta(table)
+        const meta = Meta.assert(table)
         let props = meta.props.filter(x => x.column!!)
         const columns = props.map(x => x.column!)
         const whereColumns = columns.filter(c => c.primaryKey)
         let whereSql = whereColumns.map(c => `${this.dialect.quoteColumn(c.name)} = $${c.name}`).join(' AND ')
         if (options?.where) {
             let sql = whereSql ? ' AND ' : ' WHERE '
-            const where = Array.isArray(options.where) ? options.where : [options.where]
+            const where = IS.arr(options.where) ? options.where : [options.where]
             whereSql += sql + where.join(' AND ')
         }
         let sql = `DELETE FROM ${this.dialect.quoteTable(meta.tableName)}`
@@ -137,7 +138,7 @@ export class Schema {
 
     toDbBindings(table:ClassInstance) {
         const values:DbBinding[] = []
-        const meta = Meta.assertMeta(table.constructor as ReflectMeta)
+        const meta = Meta.assert(table.constructor as ReflectMeta)
         const props = meta.props.filter(x => x.column!!)
 
         props.forEach(x => {
@@ -155,7 +156,7 @@ export class Schema {
 
     toDbObject(table:ClassInstance, options?:{ onlyProps?:string[] }) {
         const values: { [key:string]: DbBinding } = {}
-        const meta = Meta.assertMeta(table.constructor as ReflectMeta)
+        const meta = Meta.assert(table.constructor as ReflectMeta)
         const props = meta.props.filter(x => x.column!!)
 
         for (const x of props) {
