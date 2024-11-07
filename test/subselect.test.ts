@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { sqlite as $ } from '../src'
+import { sqlite as $, column, table } from '../src'
 import { Contact, Order, OrderItem } from './data'
 import { str } from './utils'
 
@@ -93,6 +93,76 @@ describe('SQLite SUB SELECT Tests', () => {
         
         const newAndHighPurchase = (c:Contact,o:Order) => $`${c.createdAt} > ${monthAgo} && ${o.total} + ${1000}`
         expect(str(q4.where(newAndHighPurchase))).toEndWith(`WHERE c."createdAt" > $_1 && o."total" + $_2`)
+    })
+
+    it ('does rewrite offset limit in sub selects', () => {
+        
+        @table() class Product {
+            @column("INTEGER", { autoIncrement:true, alias:'sku' }) id = ''
+            @column("TEXT",    { required:true }) name = ''
+            @column("MONEY",   { required:true }) cost = 0.0
+        }
+        @table() class Contact {
+            @column("INTEGER",  { autoIncrement:true }) id = 0
+            @column("TEXT",     { required:true }) name = ''
+            @column("TEXT",     { required:true, index:true, unique:true }) email = ''
+            @column("DATETIME", { defaultValue:"CURRENT_TIMESTAMP" }) createdAt = new Date()
+        }
+        @table() class Order {
+            @column("INTEGER",  { autoIncrement:true }) id = 0
+            @column("INTEGER",  { references:{ table:Contact, on:["DELETE","CASCADE"] } }) contactId = 0
+            @column("MONEY")    total = 0.0
+            @column("DATETIME", { defaultValue:"CURRENT_TIMESTAMP" }) createdAt = new Date()
+        }
+        @table() class OrderItem {
+            @column("INTEGER", { autoIncrement:true }) id = 0
+            @column("INTEGER", { references:{ table:Order, on:["DELETE","RESTRICT"] } }) orderId = 0
+            @column("INTEGER", { references:{ table:Product } }) sku = ''
+            @column("INTEGER") qty = 0
+            @column("MONEY")   total = 0.0
+        }
+
+        const qHot = $.from(OrderItem)
+            .groupBy(i => $`${i.id}`)
+            .orderBy(i => $`SUM(${i.qty}) DESC`)
+            .limit(10,20)
+    
+        const contactIds = [1,2,3]
+        const q = $.from(Order, 'o')
+            .leftJoin(Contact, { on:(o,c) => $`${c.id} = ${o.contactId}`, as:'c'})
+            .join(OrderItem,   { on:(_,i,o) => $`${o.id} = ${i.orderId}`, as:'i'})
+            .leftJoin(Product, { on:(i,p) => $`${i.sku} = ${p.id}`, as:'p' })
+            .where((o,c,i,p) => $`${o.contactId} IN (${contactIds}) AND ${p.cost} >= ${1000}`)
+            .or((o,c,i) => $`${i.sku} IN (${qHot})`)
+            .select((o,c,i,p) => $`${c.name}, ${o.id}, ${p.name}, ${p.cost}, ${i.qty}, ${i.total}, ${o.total}`)
+            .orderBy(o => $`${o.total}`)
+            .limit(50, 100)
+
+        // $.log(q)
+        expect(str(q.toString()))
+            .toEqual(str(`SELECT c."name", o."id", p."name", p."cost", i."qty", i."total", o."total"
+                FROM "Order" o
+                LEFT JOIN "Contact" c ON c."id" = o."contactId"
+                JOIN "OrderItem" i ON o."id" = i."orderId"
+                LEFT JOIN "Product" p ON i."sku" = p."sku"
+                WHERE o."contactId" IN ($_1,$_2,$_3) AND p."cost" >= $_4
+                    OR i."sku" IN (SELECT "id", "orderId", "sku", "qty", "total"
+                        FROM "OrderItem"
+                    GROUP BY "id"
+                    ORDER BY SUM("qty") DESC
+                    LIMIT $_5 OFFSET $_6)
+                ORDER BY o."total"
+                LIMIT $limit OFFSET $offset
+                PARAMS {
+                    "_1": 1,
+                    "_2": 2,
+                    "_3": 3,
+                    "_4": 1000,
+                    "_6": 20,
+                    "_5": 10,
+                    "offset": 100,
+                    "limit": 50
+                }`))
     })
 
 })

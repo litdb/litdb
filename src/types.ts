@@ -206,7 +206,7 @@ export interface SyncConnection {
         : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 }
 
-export type Fragment = { sql:string, params:Record<string,unknown> }
+export type Fragment = { sql:string, params:Record<string,any> }
 export type IntoFragment<T> = Fragment & { into:T }
 
 export interface SqlBuilder {
