@@ -38,7 +38,7 @@ export class Inspect {
                 obj = obj.build()
             }
             if ("sql" in obj && "params" in obj) {
-                return [obj.sql, `PARAMS ${Inspect.dump(obj.params)}`].join('\n') + '\n'
+                return [obj.sql, `PARAMS ${Inspect.dump(obj.params).replaceAll('"','')}`].join('\n') + '\n'
             }
         }
         let to = JSON.stringify(obj, null, 4)

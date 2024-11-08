@@ -154,14 +154,14 @@ describe('SQLite SUB SELECT Tests', () => {
                 ORDER BY o."total"
                 LIMIT $limit OFFSET $offset
                 PARAMS {
-                    "_1": 1,
-                    "_2": 2,
-                    "_3": 3,
-                    "_4": 1000,
-                    "_6": 20,
-                    "_5": 10,
-                    "offset": 100,
-                    "limit": 50
+                    _1: 1,
+                    _2: 2,
+                    _3: 3,
+                    _4: 1000,
+                    _6: 20,
+                    _5: 10,
+                    offset: 100,
+                    limit: 50
                 }`))
     })
 
