@@ -9,13 +9,13 @@ class MySqlTypes implements DialectTypes {
     // use as-is
     native:ColumnType[] = [
         "INTEGER", "SMALLINT", "BIGINT", // INTEGER
-        "REAL", "DOUBLE", "FLOAT", "DECIMAL",  // REAL
-        "NUMERIC", "DECIMAL", "MONEY", //NUMERIC 
+        "DOUBLE", "FLOAT", "DECIMAL",    // REAL
+        "NUMERIC", "DECIMAL",            // NUMERIC 
         "BOOLEAN", 
         "DATE", "DATETIME",
-        "TIME", "TIMESTAMP", "INTERVAL",
-        "UUID", "JSON", "JSONB", "XML", 
-        "BLOB", "BYTES", "BIT",
+        "TIME", "TIMESTAMP",
+        "UUID", "JSON", "XML", 
+        "BLOB",
     ]
     // use these types instead
     map : Record<string,ColumnType[]> = {

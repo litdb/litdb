@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { mysql as $, Table } from '../src'
+import { mysql as $, mysql, Table } from '../src'
 import { Contact, Order } from './data'
 import { ColumnReference } from '../src/types'
 import { str } from './utils'
@@ -88,14 +88,14 @@ describe('MySQL Schema Tests', () => {
         expect(str($.schema.createTable(Product))).toBe(str(`CREATE TABLE ${f('Product')} ( 
             ${sku} TEXT PRIMARY KEY, 
             ${name} TEXT NOT NULL, 
-            ${cost} MONEY NOT NULL
+            ${cost} DECIMAL(15,2) NOT NULL
         );
         CREATE UNIQUE INDEX idx_product_name ON ${f('Product')} (${name});`))
         
         expect(str($.schema.createTable(Order))).toBe(str(`CREATE TABLE ${f('Order')} (
             ${id} INTEGER PRIMARY KEY AUTOINCREMENT, 
             ${contactId} INTEGER NOT NULL, 
-            ${total} MONEY NOT NULL,
+            ${total} DECIMAL(15,2) NOT NULL,
             ${createdAt} DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (${contactId}) REFERENCES ${f('Contact')}(${id}) ON DELETE CASCADE 
         );`))
@@ -105,7 +105,7 @@ describe('MySQL Schema Tests', () => {
             ${orderId} INTEGER NOT NULL,
             ${sku} TEXT NOT NULL,
             ${qty} INTEGER NOT NULL,
-            ${total} MONEY NOT NULL,
+            ${total} DECIMAL(15,2) NOT NULL,
             FOREIGN KEY (${orderId}) REFERENCES ${f('Order')}(${id}) ON DELETE RESTRICT,
             FOREIGN KEY (${sku}) REFERENCES ${f('Product')}(${sku}) ON DELETE RESTRICT
         );`))

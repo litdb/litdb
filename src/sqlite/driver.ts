@@ -11,14 +11,13 @@ export class SqliteTypes implements DialectTypes {
     // use as-is
     native:ColumnType[] = [
         "INTEGER", "SMALLINT", "BIGINT", // INTEGER
-        "REAL", "DOUBLE", "FLOAT",  // REAL
-        "NUMERIC", "DECIMAL", "BOOLEAN", "DATE", "DATETIME", //NUMERIC
+        "REAL", "DOUBLE", "FLOAT",       // REAL
+        "NUMERIC", "DECIMAL", "BOOLEAN", // NUMERIC
+        "DATE", "DATETIME",
     ]
     // use these types instead
     map: Record<string,ColumnType[]> = {
         INTEGER: ["INTERVAL", "MONEY"],
-        REAL:    ["REAL"],
-        NUMERIC: ["DECIMAL"],
         BLOB:    ["BLOB", "BYTES", "BIT"],
         TEXT: [
             "UUID", "JSON", "JSONB", "XML", 
