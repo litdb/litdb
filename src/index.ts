@@ -1,6 +1,6 @@
 import type { 
   Driver, Connection, SyncConnection, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, ColumnDefinition, 
-  TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType, Changes,
+  TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType, Changes, Constructor,
 } from "./types"
 import { DbConnection, SyncDbConnection, DefaultStrategy, SnakeCaseStrategy, useFilter } from "./connection"
 import { WhereQuery, SelectQuery, UpdateQuery, DeleteQuery, } from "./sql.builders"
@@ -26,21 +26,13 @@ const mysql = (() => { return MySql.init().$ })()
 const postgres = (() => { return PostgreSql.init().$ })()
 
 export { 
+  Driver, Connection, SyncConnection, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, ColumnDefinition, 
+  TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType, Changes, Constructor,
   Sql,
   Meta,
   Schema,
-  Driver,
-  Connection, 
-  SyncConnection,
   DbConnection,
   SyncDbConnection,
-  NamingStrategy,
-  SqlBuilder,
-  ReflectMeta,
-  Dialect,
-  DialectTypes, 
-  ColumnType,
-  Changes,
   DefaultStrategy,
   SnakeCaseStrategy,
   useFilter,
@@ -56,7 +48,6 @@ export {
   column,
   Table,
   DefaultValues,
-  ColumnDefinition, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, TypeConverter,
   Sqlite, SqliteDialect, SqliteSchema, SqliteTypes,                 sqlite,
   MySql, MySqlDialect, MySqlSchema, MySqlTypes,                     mysql,
   PostgreSql, PostgreSqlDialect, PostgreSqlSchema, PostgreSqlTypes, postgres,

@@ -1,16 +1,14 @@
 import { Database, Statement as BunStatement } from "bun:sqlite"
 import type { 
     ColumnDefinition, Driver, Connection, SyncConnection, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,
-    Changes,
-    ColumnType,     
+    Changes, ColumnType, Constructor,
 } from "../../src"
 import { 
     Sql, DbConnection, NamingStrategy, SyncDbConnection, DefaultValues, converterFor, DateTimeConverter, 
     DialectTypes, SqliteDialect, DefaultStrategy, Schema, IS,
-    SqliteSchema,
+    SqliteSchema, SqliteTypes,
 } from "../../src"
-import { Constructor } from "../../src/types"
-import { SqliteTypes } from "../../src/sqlite/driver"
+
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
 

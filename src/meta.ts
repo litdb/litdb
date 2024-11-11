@@ -3,7 +3,6 @@ import { IS } from "./utils"
 
 export const type = Symbol('type')
 
-
 export class Meta {
     static metadata: { [id:symbol]: Meta } = {}
 
