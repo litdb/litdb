@@ -65,6 +65,9 @@ describe('SQLite SUB SELECT Tests', () => {
             .toEqual(str(`UPDATE "Contact" SET "age" = $age, "city" = $city WHERE "id" = $id`))
 
         const hasId = $.idEquals
+        // const hasId = <Table extends { id:number }>(id:number) => 
+        //     (x:Table) => $.fragment($`${x.id} = $id`, { id })
+
         const id = 10
         var { sql, params } = $.from(Contact).where(hasId(id)).build()
         expect(sql).toContain(`WHERE "id" = $id`)

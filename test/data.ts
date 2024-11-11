@@ -200,23 +200,27 @@ export const dynamicPeople = people.map(c => new DynamicPerson(c))
 
 export function customerOrderTables() {
     @table() class Product {
+        constructor(data?: Partial<Product>) { Object.assign(this, data) }
         @column("INTEGER", { autoIncrement:true, alias:'sku' }) id = ''
         @column("TEXT",    { required:true }) name = ''
         @column("MONEY",   { required:true }) cost = 0.0
     }
     @table() class Contact {
+        constructor(data?: Partial<Contact>) { Object.assign(this, data) }
         @column("INTEGER",  { autoIncrement:true }) id = 0
         @column("TEXT",     { required:true }) name = ''
         @column("TEXT",     { required:true, index:true, unique:true }) email = ''
         @column("DATETIME", { defaultValue:"CURRENT_TIMESTAMP" }) createdAt = new Date()
     }
     @table() class Order {
+        constructor(data?: Partial<Order>) { Object.assign(this, data) }
         @column("INTEGER",  { autoIncrement:true }) id = 0
         @column("INTEGER",  { references:{ table:Contact, on:["DELETE","CASCADE"] } }) contactId = 0
         @column("MONEY")    total = 0.0
         @column("DATETIME", { defaultValue:"CURRENT_TIMESTAMP" }) createdAt = new Date()
     }
     @table() class OrderItem {
+        constructor(data?: Partial<OrderItem>) { Object.assign(this, data) }
         @column("INTEGER", { autoIncrement:true }) id = 0
         @column("INTEGER", { references:{ table:Order, on:["DELETE","RESTRICT"] } }) orderId = 0
         @column("INTEGER", { references:{ table:Product } }) sku = ''

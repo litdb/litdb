@@ -204,7 +204,6 @@ describe('SQLite Driver Tests', () => {
         expect(db.array(q.clone().where(c => $`${c.id} = ${id}`))).toEqual(contactArrays[0])
         expect(db.array`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = ${id}`).toEqual(contactArrays[0])
         expect(db.array($.fragment(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = $id`, { id }))).toEqual(contactArrays[0])
-
     })
 
 })
