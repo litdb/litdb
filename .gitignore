@@ -1,7 +1,11 @@
-# Logs
+#custom
 *.db
 *.db-shm
 *.db-wal
+.DS_Store
+.DS_Store/
+
+# Logs
 logs
 *.log
 npm-debug.log*
