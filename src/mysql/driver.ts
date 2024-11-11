@@ -5,7 +5,7 @@ import { MySqlSchema } from "./schema"
 import { ConnectionBase } from "../connection"
 import { Schema } from "../schema"
 
-class MySqlTypes implements DialectTypes {
+export class MySqlTypes implements DialectTypes {
     // use as-is
     native:ColumnType[] = [
         "INTEGER", "SMALLINT", "BIGINT", // INTEGER

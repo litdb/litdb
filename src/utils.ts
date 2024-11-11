@@ -1,13 +1,48 @@
 import { Constructor, Fragment, JoinBuilder, TypeRef } from "./types"
 
-export function padInt(n: number) { return n < 10 ? '0' + n : n }
-
-export function isDate(d:any) { 
-    return d && Object.prototype.toString.call(d) === "[object Date]" && !isNaN(d) 
+export class IS {
+    /** Array.isArray */
+    static arr(o:any):o is any[] {
+        return Array.isArray(o)
+    }
+    /** typeof 'object' -> is Record<string, any> */
+    static rec(o:any):o is Record<string, any> {
+        return typeof o == 'object'
+    }
+    /** typeof 'object' -> is any */
+    static obj(o:any):o is any {
+        return typeof o == 'object'
+    }
+    /** typeof 'function' */
+    static fn(o:any):o is Function { //((...args:any[]) => any)
+        return typeof o == 'function'
+    }
+    /** typeof 'string' */
+    static str(o:any):o is string {
+        return typeof o == 'string'
+    }
+    /** typeof 'number' */
+    static num(o:any):o is number {
+        return typeof o == 'number'
+    }
+    /** typeof 'symbol' */
+    static sym(o:any):o is symbol {
+        return typeof o == 'symbol'
+    }
+    /** TemplateStringsArray */
+    static tpl(o: any): o is TemplateStringsArray {
+        return IS.arr(o) && 'raw' in o
+    }
+    /** is Date */
+    static date(o:any): o is Date { 
+        return o && Object.prototype.toString.call(o) === "[object Date]" && !isNaN(o) 
+    }
 }
 
+export function padInt(n: number) { return n < 10 ? '0' + n : n }
+
 export function toDate(s: string|any) { return !s ? null 
-    : isDate(s)
+    : IS.date(s)
         ? s as Date 
         : s[0] == '/' 
             ? new Date(parseFloat(/Date\(([^)]+)\)/.exec(s)![1])) 
@@ -130,41 +165,6 @@ export function asType<NewTable extends Constructor<any>>(cls:NewTable|JoinBuild
 export function asRef<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>) 
     : TypeRef<InstanceType<NewTable>>|undefined {
     return IS.obj(cls) && (cls as any).$ref ? cls as TypeRef<InstanceType<NewTable>> : undefined
-}
-
-export class IS {
-    /** Array.isArray */
-    static arr(o:any):o is any[] {
-        return Array.isArray(o)
-    }
-    /** typeof 'object' -> is Record<string, any> */
-    static rec(o:any):o is Record<string, any> {
-        return typeof o == 'object'
-    }
-    /** typeof 'object' -> is any */
-    static obj(o:any):o is any {
-        return typeof o == 'object'
-    }
-    /** typeof 'function' */
-    static fn(o:any):o is Function { //((...args:any[]) => any)
-        return typeof o == 'function'
-    }
-    /** typeof 'string' */
-    static str(o:any):o is string {
-        return typeof o == 'string'
-    }
-    /** typeof 'number' */
-    static num(o:any):o is number {
-        return typeof o == 'number'
-    }
-    /** typeof 'symbol' */
-    static sym(o:any):o is symbol {
-        return typeof o == 'symbol'
-    }
-    /** TemplateStringsArray */
-    static tpl(o: any): o is TemplateStringsArray {
-        return IS.arr(o) && 'raw' in o
-    }
 }
 
 export function snakeCase(s: string) { return (s || '').replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase() }

@@ -8,14 +8,14 @@ import { Sql } from "./sql"
 import { Meta } from "./meta"
 import { Schema } from "./schema"
 import { Inspect, Watch } from "./inspect"
-import { pick, omit, toStr, mergeParams, nextParam, snakeCase, IS } from "./utils"
+import { IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, snakeCase, asType, asRef } from "./utils"
 import { converterFor, DateTimeConverter } from "./converters"
 import { table, column, Table, DefaultValues, } from "./model"
-import { Sqlite } from "./sqlite/driver"
+import { Sqlite, SqliteTypes } from "./sqlite/driver"
 import { SqliteDialect } from "./sqlite/dialect"
-import { MySql } from "./mysql/driver"
+import { MySql, MySqlTypes } from "./mysql/driver"
 import { MySqlDialect } from "./mysql/dialect"
-import { PostgreSql } from "./postgres/driver"
+import { PostgreSql, PostgreSqlTypes } from "./postgres/driver"
 import { PostgreSqlDialect } from "./postgres/dialect"
 import { SqliteSchema } from "./sqlite/schema"
 import { MySqlSchema } from "./mysql/schema"
@@ -57,8 +57,8 @@ export {
   Table,
   DefaultValues,
   ColumnDefinition, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, TypeConverter,
-  Sqlite, SqliteDialect, SqliteSchema,             sqlite,
-  MySql, MySqlDialect, MySqlSchema,                mysql,
-  PostgreSql, PostgreSqlDialect, PostgreSqlSchema, postgres,
-  pick, omit, toStr, mergeParams, nextParam, snakeCase, IS,
+  Sqlite, SqliteDialect, SqliteSchema, SqliteTypes,                 sqlite,
+  MySql, MySqlDialect, MySqlSchema, MySqlTypes,                     mysql,
+  PostgreSql, PostgreSqlDialect, PostgreSqlSchema, PostgreSqlTypes, postgres,
+  IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, snakeCase, asType, asRef,
 }

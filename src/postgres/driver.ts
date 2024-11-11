@@ -6,7 +6,7 @@ import { ConnectionBase } from "../connection"
 import { Schema } from "../schema"
 
 
-class PostgreSqlTypes implements DialectTypes {
+export class PostgreSqlTypes implements DialectTypes {
     // use as-is
     native:ColumnType[] = [
         "INTEGER", "SMALLINT", "BIGINT", // INTEGER
