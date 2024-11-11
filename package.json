@@ -2,14 +2,13 @@
   "name": "litdb",
   "type": "module",
   "version": "0.0.10",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "description": "",
   "exports": {
     "types": "./dist/index.d.ts",
-    "import": "./dist/index.js",
-    "require": "./dist/index.cjs"
+    "import": "./dist/index.js"
   },
   "scripts": {
     "build": "bun run build.ts",
@@ -29,13 +28,13 @@
     "mysql"
   ],
   "license": "BSD-3-Clause",
-  "homepage": "https://github.com/litdb/litdb",
+  "homepage": "https://litdb.dev",
+  "author": "Demis Bellot <https://github.com/mythz>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/litdb/litdb.git"
   },
   "bugs": "https://github.com/litdb/litdb/issues",
-  "author": "Demis Bellot <https://github.com/mythz>",
   "devDependencies": {
     "bun-plugin-dts": "^0.3.0",
     "@types/bun": "^1.1.13"
