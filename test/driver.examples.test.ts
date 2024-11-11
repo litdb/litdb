@@ -14,15 +14,13 @@ describe('SQLite Driver Example Tests', () => {
 
     it ('Can run litdb.dev example', () => {
 
-        const contacts = [
-            new Contact({ name:"John Doe", email:"john@email.org" }),
-            new Contact({ name:"Jane Doe", email:"jane@email.org" }),
-        ]
-
         db.dropTable(Contact)
         db.createTable(Contact)
-        db.insertAll(contacts)
-
+        db.insertAll([
+            new Contact({ name:"John Doe", email:"john@email.org" }),
+            new Contact({ name:"Jane Doe", email:"jane@email.org" }),
+        ])
+        
         const janeEmail = 'jane@email.org'
         const jane = db.one<Contact>($.from(Contact).where(c => $`${c.email} = ${janeEmail}`))!
 
@@ -42,10 +40,10 @@ describe('SQLite Driver Example Tests', () => {
 
         const bob = db.one($.from(Contact).where(hasId(bobId)).into(Contact)) // => Contact    
         expect(pick(bob!, ['name','email'])).toEqual({ name:"Bob", email:"bob@email.org" })
-        const dbContacts = db.all($.from(Contact).into(Contact))              // => Contact[]
-        expect(dbContacts.length).toBe(2 + 1 + 1 + 1)
-        const dbContactsCount = db.value($.from(Contact).select`COUNT(*)`)    // => number
-        expect(dbContactsCount).toBe(2 + 1 + 1 + 1)
+        const contacts = db.all($.from(Contact).into(Contact))                // => Contact[]
+        expect(contacts.length).toBe(2 + 1 + 1 + 1)
+        const contactsCount = db.value($.from(Contact).select`COUNT(*)`)      // => number
+        expect(contactsCount).toBe(2 + 1 + 1 + 1)
         const emails = db.column($.from(Contact).select(c => $`${c.email}`))  // => string[]
         expect(emails.toSorted()).toEqual([
             "alice@email.org",
