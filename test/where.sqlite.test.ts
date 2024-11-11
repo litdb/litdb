@@ -15,7 +15,7 @@ export const selectContact = 'id,firstName,lastName,age,email,phone,address,city
 export const selectPerson = 'id,firstName,lastName,email'
     .split(',').map(c => f(c)).join(', ')
 
-describe.only('SQLite WHERE Tests', () => {
+describe('SQLite WHERE Tests', () => {
 
     it ('Can query recommended shorthands', () => {
         const search = {            
