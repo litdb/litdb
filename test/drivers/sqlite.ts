@@ -278,4 +278,12 @@ class SqliteConnection implements Connection, SyncConnection {
             return new SqliteStatement(this.db.query<RetType, ParamsType>(sql))
         }
     }
+
+    close() {        
+        this.db.close()
+        return Promise.resolve()
+    }
+    closeSync() {
+        this.db.close()
+    }
 }

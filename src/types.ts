@@ -195,6 +195,8 @@ export interface Connection {
      */
     prepare<RetType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : Statement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]>
+
+    close:() => Promise<void>
 }
 
 export interface SyncConnection {
@@ -204,6 +206,8 @@ export interface SyncConnection {
      */
     prepareSync<RetType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
         : SyncStatement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]>
+
+    closeSync:() => void
 }
 
 export type Fragment = { sql:string, params:Record<string,any> }
