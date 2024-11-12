@@ -224,8 +224,8 @@ class Sqlite implements Driver
         if (offset == null && limit == null)
             throw new Error(`Invalid argument sqlLimit(${offset}, ${limit})`)
         const frag = offset
-            ? this.$.fragment(`LIMIT $limit OFFSET $offset`, { offset, limit:limit ?? -1 })
-            : this.$.fragment(`LIMIT $limit`, { limit })
+            ? this.$.sql(`LIMIT $limit OFFSET $offset`, { offset, limit:limit ?? -1 })
+            : this.$.sql(`LIMIT $limit`, { limit })
         return frag
     }
 }

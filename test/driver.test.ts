@@ -173,7 +173,7 @@ describe('SQLite Driver Tests', () => {
         expect(db.column`SELECT age from Contact`).toEqual(contacts.map(x => x.age))
         expect(db.column`SELECT age from Contact WHERE age = ${age}`).toEqual(contacts.filter(x => x.age == 27).map(x => x.age))
         expect(db.column`SELECT age from Contact WHERE age = ${age}`).toEqual(contacts.filter(x => x.age == 27).map(x => x.age))
-        expect(db.column($.fragment('SELECT age from Contact WHERE age = $age', { age }))).toEqual(contacts.filter(x => x.age == 27).map(x => x.age))
+        expect(db.column($.sql('SELECT age from Contact WHERE age = $age', { age }))).toEqual(contacts.filter(x => x.age == 27).map(x => x.age))
     })
 
     it ('can select arrays', () => {
@@ -197,13 +197,13 @@ describe('SQLite Driver Tests', () => {
         expect(db.arrays`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE age = ${age}`)
             .toEqual(contactArrays.filter(x => x[3] === age))
 
-        expect(db.arrays($.fragment(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE age = $age`, { age })))
+        expect(db.arrays($.sql(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE age = $age`, { age })))
             .toEqual(contactArrays.filter(x => x[3] === age))
         
         const id = 1
         expect(db.array(q.clone().where(c => $`${c.id} = ${id}`))).toEqual(contactArrays[0])
         expect(db.array`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = ${id}`).toEqual(contactArrays[0])
-        expect(db.array($.fragment(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = $id`, { id }))).toEqual(contactArrays[0])
+        expect(db.array($.sql(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = $id`, { id }))).toEqual(contactArrays[0])
     })
 
 })

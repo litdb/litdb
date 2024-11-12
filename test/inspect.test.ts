@@ -62,7 +62,7 @@ describe('Inspect tests', () => {
         // $.log(q.into(Order))
 
         const id = 10
-        $.log($.fragment('id = $id', { id }))
+        $.log($.sql('id = $id', { id }))
         $.log($`city = ${'Austin'}`)
     })
 })

@@ -36,7 +36,7 @@ describe('SQLite Driver Example Tests', () => {
 
         // Typed SQL fragment example
         const hasId = <Table extends { id:number }>(id:number|bigint) =>
-            (x:Table) => $.fragment($`${x.id} = $id`, { id })
+            (x:Table) => $.sql($`${x.id} = $id`, { id })
 
         const bob = db.one($.from(Contact).where(hasId(bobId)).into(Contact)) // => Contact    
         expect(pick(bob!, ['name','email'])).toEqual({ name:"Bob", email:"bob@email.org" })

@@ -56,7 +56,7 @@ describe('SQLite SUB SELECT Tests', () => {
     })
 
     it ('Can compose fragments and builders', () => {
-        const byId = (id:number) => $.fragment('id = $id', { id })
+        const byId = (id:number) => $.sql('id = $id', { id })
 
         expect(str($.update(Contact).set({ age:41, city:'Austin' }).where(byId(1))))
             .toEqual(str(`UPDATE "Contact" SET "age" = $age, "city" = $city WHERE id = $id`))
@@ -66,7 +66,7 @@ describe('SQLite SUB SELECT Tests', () => {
 
         const hasId = $.idEquals
         // const hasId = <Table extends { id:number }>(id:number) => 
-        //     (x:Table) => $.fragment($`${x.id} = $id`, { id })
+        //     (x:Table) => $.sql($`${x.id} = $id`, { id })
 
         const id = 10
         var { sql, params } = $.from(Contact).where(hasId(id)).build()

@@ -116,7 +116,7 @@ db.exec`INSERT INTO Contact(name,email) VALUES (${name}, ${email})`
 
 // Typed SQL fragment example
 const hasId = <Table extends { id:number }>(id:number) =>
-    (x:Table) => $.fragment($`${x.id} = $id`, { id })
+    (x:Table) => $.sql($`${x.id} = $id`, { id })
 
 const contacts = db.all($.from(Contact).into(Contact))                // => Contact[]
 const bob = db.one($.from(Contact).where(hasId(bobId)).into(Contact)) // => Contact    

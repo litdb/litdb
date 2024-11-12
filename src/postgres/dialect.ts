@@ -22,9 +22,9 @@ export class PostgreSqlDialect implements Dialect {
             throw new Error(`Invalid argument sqlLimit(${offset}, ${limit})`)
         const frag = offset
             ? (limit 
-                ? this.$.fragment(`LIMIT $limit OFFSET $offset`, { offset, limit }) 
-                : this.$.fragment(`OFFSET $offset`, { offset }))
-            : this.$.fragment(`LIMIT $limit`, { limit })
+                ? this.$.sql(`LIMIT $limit OFFSET $offset`, { offset, limit }) 
+                : this.$.sql(`OFFSET $offset`, { offset }))
+            : this.$.sql(`LIMIT $limit`, { limit })
         return frag
     }
 }

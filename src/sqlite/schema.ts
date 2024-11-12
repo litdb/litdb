@@ -78,8 +78,8 @@ export class SqliteSchema extends Schema {
         if (offset == null && limit == null)
             throw new Error(`Invalid argument sqlLimit(${offset}, ${limit})`)
         const frag = offset
-            ? this.driver.$.fragment(`LIMIT $limit OFFSET $offset`, { offset, limit:limit ?? -1 })
-            : this.driver.$.fragment(`LIMIT $limit`, { limit })
+            ? this.driver.$.sql(`LIMIT $limit OFFSET $offset`, { offset, limit:limit ?? -1 })
+            : this.driver.$.sql(`LIMIT $limit`, { limit })
         return frag
     }
 }
