@@ -34,7 +34,7 @@ describe.only('SQLite Driver Example Tests', () => {
         const alice = db.one`SELECT name,email from Contact WHERE email = ${email}`! as Contact
         expect(pick(alice, ['name','email'])).toEqual({ name, email })
 
-        useFilter(db, sql => console.log(sql))
+        // useFilter(db, sql => console.log(sql))
         // Typed SQL fragment with named param example
         const hasId = <Table extends { id:number }>(id:number|bigint) =>
             (x:Table) => $.sql($`${x.id} = $id`, { id })
