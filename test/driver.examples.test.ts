@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import { sync as db, $ } from './db'
-import { table, column, pick, useFilter } from '../src'
+import { table, column, pick } from '../src'
 
 @table() class Contact {
     constructor(data?: Partial<Contact>) { Object.assign(this, data) }
@@ -12,7 +12,12 @@ import { table, column, pick, useFilter } from '../src'
 
 describe('SQLite Driver Example Tests', () => {
 
-    it ('Can run litdb.dev example', () => {
+    it('Can run litdb.dev example', () => {
+        const sorted = {
+            ids: [1,2,3,4,5],
+            emails: ["alice@email.org","bob@email.org","jane@email.org","joe@doe.org","john@email.org"],
+            names: ['Alice','Bob','Jane Doe','Joe','John Doe']
+        }
 
         db.dropTable(Contact)
         db.createTable(Contact)
@@ -27,6 +32,7 @@ describe('SQLite Driver Example Tests', () => {
         // Insert examples
         const { lastInsertRowid:bobId } = db.insert(new Contact({ name:"Bob", email:"bob@email.org" }))
         expect(bobId).toBe(3)
+        // useFilter(db, sql => console.log(sql))
         const { lastInsertRowid } = db.exec`INSERT INTO Contact(name,email) VALUES ('Joe','joe@doe.org')`
         expect(lastInsertRowid).toBe(4)
         const name = 'Alice', email = 'alice@email.org'
@@ -34,29 +40,23 @@ describe('SQLite Driver Example Tests', () => {
         const alice = db.one`SELECT name,email from Contact WHERE email = ${email}`! as Contact
         expect(pick(alice, ['name','email'])).toEqual({ name, email })
 
-        // useFilter(db, sql => console.log(sql))
-        // Typed SQL fragment with named param example
+        // Typed SQL fragment example
         const hasId = <Table extends { id:number }>(id:number|bigint) =>
             (x:Table) => $.sql($`${x.id} = $id`, { id })
-        // positional param
-        // const hasId = <Table extends { id:number }>(id:number|bigint) => (x:Table) => $`${x.id} = ${id}`
 
         const bob = db.one($.from(Contact).where(hasId(bobId)).into(Contact)) // => Contact    
         expect(pick(bob!, ['name','email'])).toEqual({ name:"Bob", email:"bob@email.org" })
         const contacts = db.all($.from(Contact).into(Contact))                // => Contact[]
-        expect(contacts.length).toBe(2 + 1 + 1 + 1)
+        expect(contacts.length).toBe(sorted.ids.length)
         const contactsCount = db.value($.from(Contact).select`COUNT(*)`)      // => number
-        expect(contactsCount).toBe(2 + 1 + 1 + 1)
+        expect(contactsCount).toBe(sorted.ids.length)
         const emails = db.column($.from(Contact).select(c => $`${c.email}`))  // => string[]
-        expect(emails.toSorted()).toEqual([
-            "alice@email.org",
-            "bob@email.org",
-            "jane@email.org",
-            "joe@doe.org",
-            "john@email.org",
-        ])
+        expect(emails.toSorted()).toEqual(sorted.emails)
         const dbContactsArray = db.arrays($.from(Contact))                    // => any[][]
-        expect(dbContactsArray.length).toBe(2 + 1 + 1 + 1)
+        expect(dbContactsArray.length).toBe(sorted.ids.length)
+        expect(dbContactsArray.map(x => x[0]).toSorted()).toEqual(sorted.ids)
+        expect(dbContactsArray.map(x => x[1]).toSorted()).toEqual(sorted.names)
+        expect(dbContactsArray.map(x => x[2]).toSorted()).toEqual(sorted.emails)
         const bobArray = db.array($.from(Contact).where(hasId(bobId)))        // => any[]
         expect(bobArray).toEqual([3,"Bob","bob@email.org", bobArray![3]])
 
