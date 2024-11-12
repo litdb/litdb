@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import { sync as db, $ } from './db'
-import { table, column, pick } from '../src'
+import { table, column, pick, useFilter } from '../src'
 
 @table() class Contact {
     constructor(data?: Partial<Contact>) { Object.assign(this, data) }
@@ -10,7 +10,7 @@ import { table, column, pick } from '../src'
     @column("DATETIME", { defaultValue:"CURRENT_TIMESTAMP" }) createdAt = new Date()
 }
 
-describe('SQLite Driver Example Tests', () => {
+describe.only('SQLite Driver Example Tests', () => {
 
     it ('Can run litdb.dev example', () => {
 
@@ -34,9 +34,12 @@ describe('SQLite Driver Example Tests', () => {
         const alice = db.one`SELECT name,email from Contact WHERE email = ${email}`! as Contact
         expect(pick(alice, ['name','email'])).toEqual({ name, email })
 
-        // Typed SQL fragment example
+        useFilter(db, sql => console.log(sql))
+        // Typed SQL fragment with named param example
         const hasId = <Table extends { id:number }>(id:number|bigint) =>
             (x:Table) => $.sql($`${x.id} = $id`, { id })
+        // positional param
+        // const hasId = <Table extends { id:number }>(id:number|bigint) => (x:Table) => $`${x.id} = ${id}`
 
         const bob = db.one($.from(Contact).where(hasId(bobId)).into(Contact)) // => Contact    
         expect(pick(bob!, ['name','email'])).toEqual({ name:"Bob", email:"bob@email.org" })
