@@ -10,7 +10,7 @@ import { table, column, pick, useFilter } from '../src'
     @column("DATETIME", { defaultValue:"CURRENT_TIMESTAMP" }) createdAt = new Date()
 }
 
-describe.only('SQLite Driver Example Tests', () => {
+describe('SQLite Driver Example Tests', () => {
 
     it ('Can run litdb.dev example', () => {
 
