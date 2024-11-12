@@ -129,10 +129,10 @@ type ColumnsConfig<T> = {
 
 export type Changes = { changes: number; lastInsertRowid: number | bigint; }
 
-export interface Statement<ReturnType, ParamsType extends DbBinding[]> {
+export interface Statement<RetType, ParamsType extends DbBinding[]> {
     get native():any
-    all(...params: ParamsType): Promise<ReturnType[]>
-    one(...params: ParamsType): Promise<ReturnType | null>
+    all(...params: ParamsType): Promise<RetType[]>
+    one(...params: ParamsType): Promise<RetType | null>
     value<ReturnValue>(...params: ParamsType): Promise<ReturnValue | null>
     arrays(...params: ParamsType): Promise<any[][]>
     array(...params: ParamsType): Promise<any[] | null>
@@ -140,11 +140,11 @@ export interface Statement<ReturnType, ParamsType extends DbBinding[]> {
     run(...params: ParamsType): Promise<void>
 }
 
-export interface SyncStatement<ReturnType, ParamsType extends DbBinding[]> {
+export interface SyncStatement<RetType, ParamsType extends DbBinding[]> {
     get native():any
     as<T extends Constructor<any>>(t:T) : SyncStatement<T, ParamsType>
-    allSync(...params: ParamsType): ReturnType[]
-    oneSync(...params: ParamsType): ReturnType | null
+    allSync(...params: ParamsType): RetType[]
+    oneSync(...params: ParamsType): RetType | null
     valueSync<ReturnValue>(...params: ParamsType): ReturnValue | null
     arraysSync(...params: ParamsType): any[][]
     arraySync(...params: ParamsType): any[] | null
@@ -193,8 +193,8 @@ export interface Connection {
     /**
      * Prepare a parameterized statement and return an async Statement
      */
-    prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
-        : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
+    prepare<RetType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : Statement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 }
 
 export interface SyncConnection {
@@ -202,8 +202,8 @@ export interface SyncConnection {
     /**
      * Prepare a parameterized statement and return a sync Statement
      */
-    prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
-        : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]>
+    prepareSync<RetType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : SyncStatement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]>
 }
 
 export type Fragment = { sql:string, params:Record<string,any> }

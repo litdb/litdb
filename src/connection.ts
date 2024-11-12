@@ -67,11 +67,11 @@ export class DbConnection {
     createTable<Table extends ClassParam>(table:Table) {
         return Promise.resolve(this.sync.createTable<Table>(table))
     }
-    all<ReturnType>(strings: TemplateStringsArray, ...params: any[]) {
-        return Promise.resolve(this.sync.all<ReturnType>(strings, ...params))
+    all<RetType>(strings: TemplateStringsArray, ...params: any[]) {
+        return Promise.resolve(this.sync.all<RetType>(strings, ...params))
     }
-    one<ReturnType>(strings: TemplateStringsArray, ...params: any[]) {
-        return Promise.resolve(this.sync.one<ReturnType>(strings, ...params))
+    one<RetType>(strings: TemplateStringsArray, ...params: any[]) {
+        return Promise.resolve(this.sync.one<RetType>(strings, ...params))
     }
     column<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
         return Promise.resolve(this.sync.column<ReturnValue>(strings, ...params))
@@ -237,21 +237,21 @@ export class SyncDbConnection {
         throw new Error(`Invalid argument: ${toStr(str)}`)
     }
 
-    all<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<ReturnType>, ...params: any[]) {
-        const [stmt, p, into] = this.prepareSync<ReturnType>(strings, ...params)
+    all<RetType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<RetType>, ...params: any[]) {
+        const [stmt, p, into] = this.prepareSync<RetType>(strings, ...params)
         if (into) {
-            const use = stmt.as(into as Constructor<ReturnType>)
-            return (Array.isArray(p) ? use.allSync(...p) : use.allSync(p)) as ReturnType[]
+            const use = stmt.as(into as Constructor<RetType>)
+            return (Array.isArray(p) ? use.allSync(...p) : use.allSync(p)) as RetType[]
         } else {
             return Array.isArray(p) ? stmt.allSync(...p) : stmt.allSync(p)
         }
     }
 
-    one<ReturnType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<ReturnType>, ...params: any[]) {
-        const [stmt, p, into] = this.prepareSync<ReturnType>(strings, ...params)
+    one<RetType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<RetType>, ...params: any[]) {
+        const [stmt, p, into] = this.prepareSync<RetType>(strings, ...params)
         if (into) {
-            const use = stmt.as(into as Constructor<ReturnType>)
-            return (Array.isArray(p) ? use.oneSync(...p) : use.oneSync(p)) as ReturnType
+            const use = stmt.as(into as Constructor<RetType>)
+            return (Array.isArray(p) ? use.oneSync(...p) : use.oneSync(p)) as RetType
         } else {
             return Array.isArray(p) ? stmt.oneSync(...p) : stmt.oneSync(p)
         }
@@ -321,13 +321,13 @@ export class ConnectionBase {
         this.sync = new SyncDbConnection(this)
     }
 
-    prepare<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
-        : Statement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+    prepare<RetType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : Statement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         throw new Error(DriverRequired)
     }
 
-    prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
-        : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+    prepareSync<RetType, ParamsType extends DbBinding[]>(sql:TemplateStringsArray|string, ...params: DbBinding[])
+        : SyncStatement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         throw new Error(DriverRequired)
     }
 }
@@ -357,8 +357,8 @@ class FilterConnection implements SyncConnection {
 
     get driver() { return this.db.driver }
     
-    prepareSync<ReturnType, ParamsType extends DbBinding[]>(sql: TemplateStringsArray | string, ...params: DbBinding[])
-        : SyncStatement<ReturnType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+    prepareSync<RetType, ParamsType extends DbBinding[]>(sql: TemplateStringsArray | string, ...params: DbBinding[])
+        : SyncStatement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         this.fn(sql, params)
         return this.orig.prepareSync(sql, ...params)
     }
