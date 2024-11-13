@@ -337,6 +337,9 @@ export class ConnectionBase {
         : SyncStatement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
         throw new Error(DriverRequired)
     }
+
+    close():Promise<void> { throw new Error(DriverRequired) }
+    closeSync() { throw new Error(DriverRequired) }
 }
 
 export class DefaultStrategy implements NamingStrategy {
@@ -373,6 +376,8 @@ class FilterConnection implements SyncConnection {
     release() {
         this.db.connection = this.orig
     }
+
+    closeSync() { this.db.connection.closeSync() }
 }
 
 export function useFilter(
