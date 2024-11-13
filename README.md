@@ -50,17 +50,17 @@ are also available for the popular databases:
 
 Use with [Bun's native SQLite3 driver](https://bun.sh/docs/api/sqlite):
 
-:::sh
+```sh
 bun install @litdb/bun-sqlite
-:::
+```
 
 ### Node better-sqlite
 
 Use with Node [better-sqlite3](https://github.com/WiseLibs/better-sqlite3):
 
-:::sh
+```sh
 npm install @litdb/better-sqlite
-:::
+```
 
 ### PostgreSQL
 
