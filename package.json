@@ -15,6 +15,7 @@
     "minify": "shx rm -rf ./dist && bun run build && uglifyjs dist/index.js --compress --mangle -o dist/index.min.js",
     "compress": "bun run minify && brotli ./dist/index.min.js",
     "prepublishOnly": "bun run build",
+    "test": "bun test",
     "release": "bun run minify && bump patch --commit --push --tag && npm publish --access public"
   },
   "files": [
