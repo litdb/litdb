@@ -9,14 +9,32 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      # - uses: actions/checkout@v4
+      #   with:
+      #     fetch-depth: 0
+      # - uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 22
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
+      # - run: npx changelogithub
+      #   env:
+      #     GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
-      - run: npx changelogithub
-        env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        - id: checkout
+          name: Checkout
+          uses: actions/checkout@v4
+        - id: setup-bun
+          name: Setup Bun
+          uses: oven-sh/setup-bun@v2
+          with:
+            bun-version: latest
+        - id: install-deps
+          name: Install dependencies
+          run: |
+            bun install
+            bun install -g uglify-js
+        - id: build
+          name: Run compress
+          run: |
+            bun run compress
+  
