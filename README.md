@@ -1,6 +1,8 @@
 # litdb
 
-litdb contains type-safe SQL builders for TypeScript/JavaScript for writing expressive SQL you know that's type-safe, parameterized & portable across SQLite, MySQL & PostgreSQL
+litdb contains type-safe SQL builders for TypeScript/JavaScript for writing expressive SQL you know that's type-safe, parameterized & portable across SQLite, MySQL & PostgreSQL. 
+
+Website: https://litdb.dev
 
 ## SQL-like
 
@@ -46,11 +48,19 @@ are also available for the popular databases:
 
 ### Bun SQLite
 
-Use with [Bun's native SQLite3 driver](https://bun.sh/docs/api/sqlite): 
+Use with [Bun's native SQLite3 driver](https://bun.sh/docs/api/sqlite):
 
-```sh
+:::sh
 bun install @litdb/bun-sqlite
-```
+:::
+
+### Node better-sqlite
+
+Use with Node [better-sqlite3](https://github.com/WiseLibs/better-sqlite3):
+
+:::sh
+npm install @litdb/better-sqlite
+:::
 
 ### PostgreSQL
 
@@ -101,21 +111,21 @@ import { Contact } from "./models"
 db.dropTable(Contact)
 db.createTable(Contact)
 db.insertAll([
-    new Contact({ name:"John Doe", email:"john@email.org" }),
-    new Contact({ name:"Jane Doe", email:"jane@email.org" }),
+    new Contact({ name:"John Doe", email:"john@mail.org" }),
+    new Contact({ name:"Jane Doe", email:"jane@mail.org" }),
 ])
 
-const janeEmail = 'jane@email.org'
+const janeEmail = 'jane@mail.org'
 const jane = db.one<Contact>($.from(Contact).where(c => $`${c.email} = ${janeEmail}`))!
 
 // Insert examples
-const { lastInsertRowid:bobId } = db.insert(new Contact({ name:"Bob", email:"bob@email.org" }))
-const { lastInsertRowid } = db.exec(`INSERT INTO Contact(name,email) VALUES ('Joe','joe@doe.org')`)
-const name = 'Alice', email = 'alice@email.org'
+const { lastInsertRowid: bobId } = db.insert(new Contact({ name:"Bob", email:"bob@mail.org" }))
+const { lastInsertRowid } = db.exec`INSERT INTO Contact(name,email) VALUES ('Jo','jo@doe.org')`
+const name = 'Alice', email = 'alice@mail.org'
 db.exec`INSERT INTO Contact(name,email) VALUES (${name}, ${email})`
 
-// Typed SQL fragment example
-const hasId = <Table extends { id:number }>(id:number) =>
+// Typed SQL fragment with named param example
+const hasId = <Table extends { id:number }>(id:number|bigint) =>
     (x:Table) => $.sql($`${x.id} = $id`, { id })
 
 const contacts = db.all($.from(Contact).into(Contact))                // => Contact[]
