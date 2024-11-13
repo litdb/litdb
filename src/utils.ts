@@ -125,7 +125,21 @@ export function nextParamVal(params:Record<string,any>) {
 }
 
 export function sortKeys(o:Record<string,any>) {
-    return Object.keys(o).sort().reduce((acc, k) => {
+    return Object.keys(o).sort((a, b) => {
+        // Check if both keys start with underscore followed by a number
+        const aM = a.match(/^_(\d+)/)
+        const bM = b.match(/^_(\d+)/)
+        
+        // If both have _number prefix, sort numerically
+        if (aM && bM) return parseInt(aM[1]) - parseInt(bM[1])
+        
+        // If only one has _number prefix, put it first
+        if (aM) return -1
+        if (bM) return 1
+        
+        // Otherwise sort alphabetically
+        return a.localeCompare(b)
+    }).reduce((acc, k) => {
         acc[k] = o[k]
         return acc
     }, {} as Record<string,any>)

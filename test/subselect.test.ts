@@ -102,7 +102,7 @@ describe('SQLite SUB SELECT Tests', () => {
         
         const { Product, Contact, Order, OrderItem } = customerOrderTables()
 
-        const hotProducts = ['WIDGET', 'GADGET', 'THING']
+        const hotProducts = ['WIDGET', 'GADGET', 'THING', 'GIZMO', 'DOODAD']
         const qHot = $.from(OrderItem)
             .where(i => $`${i.sku} IN (${hotProducts})`)
             .groupBy(i => $`${i.id}`)
@@ -124,32 +124,34 @@ describe('SQLite SUB SELECT Tests', () => {
         // $.log(q)
         expect(str(q.toString()))
             .toEqual(str(`SELECT c."name", o."id", p."name", p."cost", i."qty", i."total", o."total" 
-                FROM "Order" o 
-                LEFT JOIN "Contact" c ON c."id" = o."contactId" 
-                JOIN "OrderItem" i ON o."id" = i."orderId" 
-                LEFT JOIN "Product" p ON i."sku" = p."sku" 
+                 FROM "Order" o 
+                 LEFT JOIN "Contact" c ON c."id" = o."contactId" 
+                 JOIN "OrderItem" i ON o."id" = i."orderId" 
+                 LEFT JOIN "Product" p ON i."sku" = p."sku" 
                 WHERE o."contactId" IN ($_1,$_2,$_3) AND p."cost" >= $_4 
-                  OR i."id" IN (SELECT "id" 
-                                 FROM "OrderItem" 
-                                WHERE "sku" IN ($_5,$_6,$_7) 
-                                GROUP BY "id" 
-                                ORDER BY SUM("qty") DESC 
-                                LIMIT $_8 OFFSET $_9) 
-               ORDER BY o."total" 
-               LIMIT $limit 
-               OFFSET $offset 
-               PARAMS { 
-                    _1: 1, 
-                    _2: 2, 
-                    _3: 3, 
-                    _4: 1000, 
-                    _5: WIDGET, 
-                    _6: GADGET, 
-                    _7: THING, 
-                    _8: 10, 
-                    _9: 20, 
-                    limit: 50,
-                    offset: 100
+                   OR i."id" IN (SELECT "id" 
+                                   FROM "OrderItem" 
+                                  WHERE "sku" IN ($_5,$_6,$_7,$_8,$_9) 
+                                  GROUP BY "id" 
+                                  ORDER BY SUM("qty") DESC 
+                                  LIMIT $_50 OFFSET $_51) 
+                ORDER BY o."total" 
+                LIMIT $limit 
+                OFFSET $offset 
+                PARAMS {
+                   _1: 1, 
+                   _2: 2, 
+                   _3: 3, 
+                   _4: 1000, 
+                   _5: WIDGET, 
+                   _6: GADGET, 
+                   _7: THING, 
+                   _8: GIZMO, 
+                   _9: DOODAD, 
+                  _10: 10, 
+                  _11: 20, 
+                limit: 50, 
+               offset: 100 
                 }`))
     })
 
