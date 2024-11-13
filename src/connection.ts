@@ -110,6 +110,9 @@ export class DbConnection {
         }
         throw new Error(`Invalid argument: ${toStr(strings)}`)
     }    
+    close() {
+        return this.connection.close()
+    }
 }
 
 export class SyncDbConnection {
@@ -301,6 +304,10 @@ export class SyncDbConnection {
         } else {
             stmt.runSync(p)
         }
+    }
+
+    close() {
+        this.connection.closeSync()
     }
 }
 
