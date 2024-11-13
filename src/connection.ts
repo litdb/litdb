@@ -92,24 +92,29 @@ export class DbConnection {
         return Promise.resolve(this.sync.run(strings, ...params))
     }
 
-    prepare<T>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
-        : [Statement<T,DbBinding[]>|Statement<T,any>, any[]|Record<string,any>]
+    prepare<T>(str: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
+        : [Statement<T,DbBinding[]>|Statement<T,any>, any[]|Record<string,any>, T|undefined]
     {
-        if (IS.tpl(strings)) {
-            let stmt = this.connection.prepare<T,DbBinding[]>(strings, ...params)
-            return [stmt, params]
-        } else if (IS.str(strings)) {
-            if ("build" in strings) {
-                let query = strings.build()
+        if (IS.tpl(str)) {
+            let stmt = this.connection.prepare<T,DbBinding[]>(str, ...params)
+            // console.log('tpl', stmt, strings, params)
+            return [stmt, params, undefined]
+        } else if (IS.obj(str)) {
+            if ("build" in str) {
+                let query = str.build()
                 let stmt = this.connection.prepare<T,any>(query.sql)
-                return [stmt, query.params]
-            } else if ("sql" in strings) {
-                let stmt = this.connection.prepare<T,any>(strings.sql)
-                return [stmt, (strings as any).params ?? {}]
+                // console.log('build', stmt, query.params)
+                return [stmt, query.params ?? {}, (query as any).into as T]
+            } else if ("sql" in str) {
+                let sql = str.sql
+                let params = (str as any).params ?? {}
+                let stmt = this.connection.prepare<T,any>(sql)
+                return [stmt, params, (str as any).into as T]
             }
         }
-        throw new Error(`Invalid argument: ${toStr(strings)}`)
-    }    
+        throw new Error(`Invalid argument: ${toStr(str)}`)
+    }
+    
     close() {
         return this.connection.close()
     }
