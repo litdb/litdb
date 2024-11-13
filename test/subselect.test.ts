@@ -102,9 +102,12 @@ describe('SQLite SUB SELECT Tests', () => {
         
         const { Product, Contact, Order, OrderItem } = customerOrderTables()
 
+        const hotProducts = ['WIDGET', 'GADGET', 'THING']
         const qHot = $.from(OrderItem)
+            .where(i => $`${i.sku} IN (${hotProducts})`)
             .groupBy(i => $`${i.id}`)
             .orderBy(i => $`SUM(${i.qty}) DESC`)
+            .select(i => $`${i.id}`)
             .limit(10,20)
     
         const contactIds = [1,2,3]
@@ -113,35 +116,40 @@ describe('SQLite SUB SELECT Tests', () => {
             .join(OrderItem,   { on:(_,i,o) => $`${o.id} = ${i.orderId}`, as:'i'})
             .leftJoin(Product, { on:(i,p) => $`${i.sku} = ${p.id}`, as:'p' })
             .where((o,c,i,p) => $`${o.contactId} IN (${contactIds}) AND ${p.cost} >= ${1000}`)
-            .or((o,c,i) => $`${i.sku} IN (${qHot})`)
+            .or((o,c,i) => $`${i.id} IN (${qHot})`)
             .select((o,c,i,p) => $`${c.name}, ${o.id}, ${p.name}, ${p.cost}, ${i.qty}, ${i.total}, ${o.total}`)
             .orderBy(o => $`${o.total}`)
             .limit(50, 100)
 
         // $.log(q)
         expect(str(q.toString()))
-            .toEqual(str(`SELECT c."name", o."id", p."name", p."cost", i."qty", i."total", o."total"
-                FROM "Order" o
-                LEFT JOIN "Contact" c ON c."id" = o."contactId"
-                JOIN "OrderItem" i ON o."id" = i."orderId"
-                LEFT JOIN "Product" p ON i."sku" = p."sku"
-                WHERE o."contactId" IN ($_1,$_2,$_3) AND p."cost" >= $_4
-                    OR i."sku" IN (SELECT "id", "orderId", "sku", "qty", "total"
-                        FROM "OrderItem"
-                    GROUP BY "id"
-                    ORDER BY SUM("qty") DESC
-                    LIMIT $_5 OFFSET $_6)
-                ORDER BY o."total"
-                LIMIT $limit OFFSET $offset
-                PARAMS {
-                    _1: 1,
-                    _2: 2,
-                    _3: 3,
-                    _4: 1000,
-                    _6: 20,
-                    _5: 10,
-                    offset: 100,
-                    limit: 50
+            .toEqual(str(`SELECT c."name", o."id", p."name", p."cost", i."qty", i."total", o."total" 
+                FROM "Order" o 
+                LEFT JOIN "Contact" c ON c."id" = o."contactId" 
+                JOIN "OrderItem" i ON o."id" = i."orderId" 
+                LEFT JOIN "Product" p ON i."sku" = p."sku" 
+                WHERE o."contactId" IN ($_1,$_2,$_3) AND p."cost" >= $_4 
+                  OR i."id" IN (SELECT "id" 
+                                 FROM "OrderItem" 
+                                WHERE "sku" IN ($_5,$_6,$_7) 
+                                GROUP BY "id" 
+                                ORDER BY SUM("qty") DESC 
+                                LIMIT $_8 OFFSET $_9) 
+               ORDER BY o."total" 
+               LIMIT $limit 
+               OFFSET $offset 
+               PARAMS { 
+                    _1: 1, 
+                    _2: 2, 
+                    _3: 3, 
+                    _4: 1000, 
+                    _5: WIDGET, 
+                    _6: GADGET, 
+                    _7: THING, 
+                    _8: 10, 
+                    _9: 20, 
+                    limit: 50,
+                    offset: 100
                 }`))
     })
 
@@ -181,7 +189,7 @@ describe('SQLite SUB SELECT Tests', () => {
                 (${totalOrders}) AS totalOrders`
             .orderBy`last30Days DESC`
 
-        $.log(q)
+        // $.log(q)
         expect(str(q.toString())).toBe(str(`
         SELECT c."id", 
                c."name", 

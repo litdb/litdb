@@ -3,7 +3,7 @@ import type {
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta } from "./meta"
-import { asRef, asType, IS, mergeParams, nextParamVal } from "./utils"
+import { asRef, asType, IS, mergeParams, nextParamVal, } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
 import { Schema } from "./schema"
@@ -61,11 +61,11 @@ export class Sql
                         // Replace named params used in SQL Builders
                         const replaceParams = ['limit','offset']
                         if (Object.keys(frag.params).some(x => replaceParams.includes(x))) {
-                            let i = nextParamVal(sqlParams)
                             for (let orig of replaceParams) {
                                 if (orig in frag.params) {
-                                    const p = '_' + i++
-                                    frag.params[p] =  frag.params[orig]
+                                    let i = nextParamVal(frag.params)
+                                    const p = '_' + i
+                                    frag.params[p] = frag.params[orig]
                                     delete frag.params[orig]
                                     frag.sql = frag.sql.replaceAll(`$${orig}`, `$${p}`)
                                 }

@@ -124,6 +124,13 @@ export function nextParamVal(params:Record<string,any>) {
         : Math.max(...positional) + 1)
 }
 
+export function sortKeys(o:Record<string,any>) {
+    return Object.keys(o).sort().reduce((acc, k) => {
+        acc[k] = o[k]
+        return acc
+    }, {} as Record<string,any>)
+}
+
 export function mergeParams(params:Record<string,any>, f:Fragment) {
     let sql = f.sql
     const hasConflicts = Object.keys(f.params).some((x:string) => x in params)
