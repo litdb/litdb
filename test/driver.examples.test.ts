@@ -32,7 +32,7 @@ describe('SQLite Driver Example Tests', () => {
         // Insert examples
         const { lastInsertRowid:bobId } = db.insert(new Contact({ name:"Bob", email:"bob@mail.org" }))
         expect(bobId).toBe(3)
-        // useFilter(db, sql => console.log(sql))
+        // useFilterSync(db, sql => console.log(sql))
         const { lastInsertRowid } = db.exec`INSERT INTO Contact(name,email) VALUES ('Jo','joe@doe.org')`
         expect(lastInsertRowid).toBe(4)
         const name = 'Alice', email = 'alice@mail.org'

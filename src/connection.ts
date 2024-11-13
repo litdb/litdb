@@ -359,7 +359,7 @@ export class SnakeCaseStrategy implements NamingStrategy {
     tableFromDef(def:TableDefinition) : string { return snakeCase(def.alias ?? def.name) }
 }
 
-class FilterConnection implements SyncConnection {
+class SyncFilterConnection implements SyncConnection {
     $:ReturnType<typeof Sql.create>
     orig:SyncConnection & { $:ReturnType<typeof Sql.create> }
 
@@ -384,9 +384,39 @@ class FilterConnection implements SyncConnection {
 
     closeSync() { this.db.connection.closeSync() }
 }
-
-export function useFilter(
+export function useFilterSync(
     db:SyncDbConnection, filter:(sql: TemplateStringsArray | string, params: DbBinding[]) => void) 
+    : { release:() => void } {
+    return new SyncFilterConnection(db, filter)
+}
+
+class FilterConnection implements Connection {
+    $:ReturnType<typeof Sql.create>
+    orig:Connection & { $:ReturnType<typeof Sql.create> }
+
+    constructor(public db:DbConnection, 
+        public fn:(sql: TemplateStringsArray | string, params: DbBinding[]) => void) {
+        this.orig = db.connection
+        db.connection = this
+        this.$ = db.$
+    }
+
+    get driver() { return this.db.driver }
+    
+    prepare<RetType, ParamsType extends DbBinding[]>(sql: TemplateStringsArray | string, ...params: DbBinding[])
+        : Statement<RetType, ParamsType extends any[] ? ParamsType : [ParamsType]> {
+        this.fn(sql, params)
+        return this.orig.prepare(sql, ...params)
+    }
+
+    release() {
+        this.db.connection = this.orig
+    }
+
+    close() { return this.db.connection.close() }
+}
+export function useFilter(
+    db:DbConnection, filter:(sql: TemplateStringsArray | string, params: DbBinding[]) => void) 
     : { release:() => void } {
     return new FilterConnection(db, filter)
 }

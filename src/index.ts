@@ -2,7 +2,7 @@ import type {
   Driver, Connection, SyncConnection, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, ColumnDefinition, 
   TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType, Changes, Constructor,
 } from "./types"
-import { DbConnection, SyncDbConnection, DefaultStrategy, SnakeCaseStrategy, useFilter } from "./connection"
+import { DbConnection, SyncDbConnection, DefaultStrategy, SnakeCaseStrategy, useFilter, useFilterSync } from "./connection"
 import { WhereQuery, SelectQuery, UpdateQuery, DeleteQuery, } from "./sql.builders"
 import { Sql } from "./sql"
 import { Meta } from "./meta"
@@ -31,11 +31,7 @@ export {
   Sql,
   Meta,
   Schema,
-  DbConnection,
-  SyncDbConnection,
-  DefaultStrategy,
-  SnakeCaseStrategy,
-  useFilter,
+  DbConnection, SyncDbConnection, DefaultStrategy, SnakeCaseStrategy, useFilter, useFilterSync,
   WhereQuery,
   SelectQuery,
   UpdateQuery,
