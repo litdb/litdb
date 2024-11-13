@@ -35,3 +35,8 @@ jobs:
         name: Run test
         run: |
           bun test
+      - id: build
+        name: Run build
+        run: |
+          bun install -g uglify-js shx
+          bun run build

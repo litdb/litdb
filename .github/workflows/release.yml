@@ -9,17 +9,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      # - uses: actions/checkout@v4
-      #   with:
-      #     fetch-depth: 0
-      # - uses: actions/setup-node@v4
-      #   with:
-      #     node-version: 22
-
-      # - run: npx changelogithub
-      #   env:
-      #     GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
         - id: checkout
           name: Checkout
           uses: actions/checkout@v4
@@ -31,8 +20,8 @@ jobs:
         - id: install-deps
           name: Install dependencies
           run: |
-            bun install
             bun install -g uglify-js shx
+            bun install
         - id: build
           name: Run compress
           run: |
