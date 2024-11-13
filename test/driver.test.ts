@@ -39,7 +39,7 @@ describe('SQLite Driver Tests', () => {
         recreateContacts()
 
         // No select, selects all columns of Primary table which uses 'into' implicitly
-        expect(db.one($.from(Contact).where(c => $`${c.id} == ${contacts[0].id}`))).toBeInstanceOf(Contact)
+        expect(db.one($.from(Contact).where(c => $`${c.id} = ${contacts[0].id}`))).toBeInstanceOf(Contact)
         
         db.dropTable(Order)
         db.createTable(Order)
@@ -47,7 +47,7 @@ describe('SQLite Driver Tests', () => {
         expect(db.one($.from(Contact).join(Order, { on:(c,o) => $`${c.id} = ${o.contactId}` }))).toBeInstanceOf(Contact)
 
         // Any select invalidates implicit into
-        const q = $.from(Contact).where(c => $`${c.id} == ${contacts[0].id}`)
+        const q = $.from(Contact).where(c => $`${c.id} = ${contacts[0].id}`)
         expect(db.one(q.select('*'))).not.toBeInstanceOf(Contact)
 
         // Use into to return results into class
@@ -107,7 +107,7 @@ describe('SQLite Driver Tests', () => {
 
         if (sub) $.dump(db.all(dbContacts))
 
-        const q = $.from(Contact).where(c => $`${c.id} == ${updateContact.id}`).into(Contact)
+        const q = $.from(Contact).where(c => $`${c.id} = ${updateContact.id}`).into(Contact)
         const one = db.one(q)!
         expect(one.age).toBe(updateContact.age)
 
