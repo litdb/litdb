@@ -58,6 +58,12 @@ export class DbConnection {
     insertAll<T extends ClassInstance>(rows:T[], options?:InsertOptions) {
         return Promise.resolve(this.sync.insertAll<T>(rows, options))
     }
+    update<T extends ClassInstance>(row:T, options?:UpdateOptions) {
+        return Promise.resolve(this.sync.update<T>(row, options))
+    }
+    delete<T extends ClassInstance>(row:T, options?:DeleteOptions) {
+        return Promise.resolve(this.sync.delete<T>(row, options))
+    }
     listTables() {
         return Promise.resolve(this.sync.listTables())
     }
@@ -67,10 +73,10 @@ export class DbConnection {
     createTable<Table extends ClassParam>(table:Table) {
         return Promise.resolve(this.sync.createTable<Table>(table))
     }
-    all<RetType>(strings: TemplateStringsArray, ...params: any[]) {
+    all<RetType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<RetType>, ...params: any[]) {
         return Promise.resolve(this.sync.all<RetType>(strings, ...params))
     }
-    one<RetType>(strings: TemplateStringsArray, ...params: any[]) {
+    one<RetType>(strings: TemplateStringsArray | SqlBuilder | Fragment | IntoFragment<RetType>, ...params: any[]) {
         return Promise.resolve(this.sync.one<RetType>(strings, ...params))
     }
     column<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
