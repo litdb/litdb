@@ -4,6 +4,8 @@ litdb contains type-safe SQL builders for TypeScript/JavaScript for writing expr
 
 Website: https://litdb.dev
 
+[![](https://litdb.dev/img/bg-video.png)](https://youtu.be/0OVXvhj8nU4)
+
 ## SQL-like
 
 litdb lets you write familiar SQL you know using its type-safe expressions and query builders that's safe by default.
