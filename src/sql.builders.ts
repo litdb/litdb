@@ -599,7 +599,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
 
     rowCount() {
         const { sql, params } = this.build()
-        return { sql:`SELECT COUNT(*) FROM (${sql}) AS COUNT`, params, into:Number }
+        return { sql:this.$.schema.sqlRowCount(sql), params, into:Number }
     }
 
     protected buildSelect() {

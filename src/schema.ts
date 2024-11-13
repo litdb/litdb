@@ -47,6 +47,10 @@ export class Schema {
 
     sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition):string { throw new Error(DriverRequired) }
 
+    sqlRowCount(sql:string) {
+        return `SELECT COUNT(*) FROM (${sql}) AS COUNT`
+    }
+
     dropTable(table:ClassParam) {
         const meta = Meta.assert(table)
         let sql = `DROP TABLE IF EXISTS ${this.dialect.quoteTable(meta.tableName)}`

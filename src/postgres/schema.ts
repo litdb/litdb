@@ -37,4 +37,8 @@ export class PostgreSqlSchema extends SqliteSchema {
 
         return sb
     }
+
+    sqlRowCount(sql:string) {
+        return `SELECT COUNT(*)::int FROM (${sql}) AS COUNT`
+    }
 }
