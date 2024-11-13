@@ -93,15 +93,15 @@ describe('PostgreSQL Schema Tests', () => {
         CREATE UNIQUE INDEX idx_product_name ON ${f('Product')} (${name});`))
         
         expect(str($.schema.createTable(Order))).toBe(str(`CREATE TABLE ${f('Order')} (
-            ${id} INTEGER PRIMARY KEY AUTOINCREMENT, 
+            ${id} SERIAL PRIMARY KEY, 
             ${contactId} INTEGER NOT NULL, 
             ${total} MONEY NOT NULL,
-            ${createdAt} DATETIME DEFAULT CURRENT_TIMESTAMP,
+            ${createdAt} TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (${contactId}) REFERENCES ${f('Contact')}(${id}) ON DELETE CASCADE 
         );`))
         
         expect(str($.schema.createTable(OrderItem))).toBe(str(`CREATE TABLE ${f('OrderItem')} (
-            ${id} INTEGER PRIMARY KEY AUTOINCREMENT,
+            ${id} SERIAL PRIMARY KEY, 
             ${orderId} INTEGER NOT NULL,
             ${sku} TEXT NOT NULL,
             ${qty} INTEGER NOT NULL,

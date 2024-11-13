@@ -36,8 +36,8 @@ describe ('SQLite Create Table Tests', () => {
     it ('does generate INSERT Contact', () => {
         const sql = schema.insert(Contact)
         expect(sql).toContain('INSERT INTO "Contact" ' + 
-            '("firstName", "lastName", "age", "email", "phone", "address", "city", "state", "postCode", "createdAt", "updatedAt")' + 
-            ' VALUES ($firstName, $lastName, $age, $email, $phone, $address, $city, $state, $postCode, $createdAt, $updatedAt)')
+            '("firstName", "lastName", "age", "email", "phone", "address", "city", "state", "postCode")' + 
+            ' VALUES ($firstName, $lastName, $age, $email, $phone, $address, $city, $state, $postCode)')
     })
 
     it ('does generate INSERT Contact onlyFields', () => {

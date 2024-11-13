@@ -13,13 +13,14 @@ export class PostgreSqlTypes implements DialectTypes {
         "REAL", "DOUBLE", "FLOAT", "DECIMAL",  // REAL
         "NUMERIC", "DECIMAL", "MONEY", //NUMERIC 
         "BOOLEAN", 
-        "DATE", "DATETIME",
+        "DATE", 
         "TIME", "TIMEZ", "TIMESTAMP", "TIMESTAMPZ", "INTERVAL",
         "UUID", "JSON", "JSONB", "XML", 
         "BLOB", "BYTES", "BIT",
     ]
     // use these types instead
     map: Record<string,ColumnType[]> = {
+        "TIMESTAMPTZ": ["DATETIME"],
     }
 }
 

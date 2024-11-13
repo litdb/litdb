@@ -82,7 +82,7 @@ export class Schema {
         if (options?.onlyProps) {
             props = props.filter(c => options.onlyProps!.includes(c.name))
         }
-        let columns = props.map(x => x.column!).filter(c => !c.autoIncrement)
+        let columns = props.map(x => x.column!).filter(c => !c.autoIncrement && !c.defaultValue)
         let sqlColumns = columns.map(c => `${this.dialect.quoteColumn(c.name)}`).join(', ')
         let sqlParams = columns.map((c) => `$${c.name}`).join(', ')
         let sql = `INSERT INTO ${this.dialect.quoteTable(meta.tableName)} (${sqlColumns}) VALUES (${sqlParams})`
