@@ -32,7 +32,7 @@ jobs:
           name: Install dependencies
           run: |
             bun install
-            bun install -g uglify-js
+            bun install -g uglify-js shx
         - id: build
           name: Run compress
           run: |
