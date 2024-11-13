@@ -119,8 +119,8 @@ const janeEmail = 'jane@mail.org'
 const jane = db.one<Contact>($.from(Contact).where(c => $`${c.email} = ${janeEmail}`))!
 
 // Insert examples
-const { lastInsertRowid: bobId } = db.insert(new Contact({ name:"Bob", email:"bob@mail.org" }))
-const { lastInsertRowid } = db.exec`INSERT INTO Contact(name,email) VALUES ('Jo','jo@doe.org')`
+const {lastInsertRowid:bobId} = db.insert(new Contact({ name:"Bob", email:"bob@mail.org" }))
+const {lastInsertRowid} = db.exec`INSERT INTO Contact(name,email) VALUES('Jo','jo@doe.org')`
 const name = 'Alice', email = 'alice@mail.org'
 db.exec`INSERT INTO Contact(name,email) VALUES (${name}, ${email})`
 
