@@ -64,12 +64,6 @@ export class Order {
     total: number = 0
 }
 
-Table(Order, {
-    columns: {
-        contactId: { type:"TEXT", references:{ table:Contact, on:["DELETE","CASCADE"] } }
-    }
-})
-
 @table()
 export class OrderItem {
     @column("INTEGER", { autoIncrement:true })
