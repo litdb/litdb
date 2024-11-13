@@ -151,8 +151,8 @@ export function sortParams(o:Record<string,any>) {
 
 export function mergeParams(params:Record<string,any>, f:Fragment) {
     let sql = f.sql
-    const hasConflicts = Object.keys(f.params).some((x:string) => x in params)
-    if (!hasConflicts) {
+    const conflicts = Object.keys(f.params).some((x:string) => x in params)
+    if (!conflicts) {
         for (const [key, value] of Object.entries(f.params)) {
             params[key] = value
         }
@@ -161,21 +161,20 @@ export function mergeParams(params:Record<string,any>, f:Fragment) {
 
     // create new param mappings
     const startIndex = nextParamVal(params)
-    const newMapping:Record<string,any> = {}
+    const newMap:Record<string,any> = {}
     let i = 0
     for (const key of Object.keys(f.params)) {
-        newMapping[key] = '_' + (startIndex + i++)
+        newMap[key] = '_' + (startIndex + i++)
     }
 
-    const transformedSql = sql.replace(/\$(\w+)/g, (_, name) => {
-        const nextValue = newMapping[name]
-        if (nextValue) {
-            const val = f.params[name]
-            params[nextValue] = val
+    const toSql = sql.replace(/\$(\w+)/g, (_, name) => {
+        const toVal = newMap[name]
+        if (toVal) {
+            params[toVal] = f.params[name]
         }
-        return `$${nextValue ?? name}`
+        return `$${toVal ?? name}`
     })
-    return transformedSql
+    return toSql
 }
 
 export function asType<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>) : NewTable {
