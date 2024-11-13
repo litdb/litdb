@@ -124,8 +124,8 @@ export function nextParamVal(params:Record<string,any>) {
         : Math.max(...positional) + 1)
 }
 
-export function sortKeys(o:Record<string,any>) {
-    return Object.keys(o).sort((a, b) => {
+export function sortParamKeys(keys:string[]) {
+    return keys.sort((a, b) => {
         // Check if both keys start with underscore followed by a number
         const aM = a.match(/^_(\d+)/)
         const bM = b.match(/^_(\d+)/)
@@ -139,7 +139,11 @@ export function sortKeys(o:Record<string,any>) {
         
         // Otherwise sort alphabetically
         return a.localeCompare(b)
-    }).reduce((acc, k) => {
+    })
+}
+
+export function sortParams(o:Record<string,any>) {
+    return sortParamKeys(Object.keys(o)).reduce((acc, k) => {
         acc[k] = o[k]
         return acc
     }, {} as Record<string,any>)
@@ -159,17 +163,19 @@ export function mergeParams(params:Record<string,any>, f:Fragment) {
     const startIndex = nextParamVal(params)
     const newMapping:Record<string,any> = {}
     let i = 0
-    for (const [key, _] of Object.entries(f.params)) {
+    for (const key of Object.keys(f.params)) {
         newMapping[key] = '_' + (startIndex + i++)
     }
 
-    // apply substitution in reverse
-    for (const [key, value] of Object.entries(f.params).reverse()) {
-        const nextValue = newMapping[key]
-        sql = sql.replaceAll(`$${key}`,`$${nextValue}`)
-        params[nextValue] = value
-    }
-    return sql
+    const transformedSql = sql.replace(/\$(\w+)/g, (_, name) => {
+        const nextValue = newMapping[name]
+        if (nextValue) {
+            const val = f.params[name]
+            params[nextValue] = val
+        }
+        return `$${nextValue ?? name}`
+    })
+    return transformedSql
 }
 
 export function asType<NewTable extends Constructor<any>>(cls:NewTable|JoinBuilder<NewTable>|TypeRef<InstanceType<NewTable>>) : NewTable {

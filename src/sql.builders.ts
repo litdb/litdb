@@ -7,7 +7,7 @@ import type {
 import { Meta, type } from "./meta"
 import { assertSql } from "./schema"
 import { Sql } from "./sql"
-import { asRef, asType, clsName, IS, leftPart, mergeParams, nextParam, sortKeys, toStr } from "./utils"
+import { asRef, asType, clsName, IS, leftPart, mergeParams, nextParam, sortParams, toStr } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 
 // minify
@@ -410,7 +410,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     build() {
         const sql = this.buildWhere()
         // console.log(`\n${sql}\n`)
-        const params = sortKeys(this.params)
+        const params = sortParams(this.params)
         return { sql, params }
     }
 
@@ -650,7 +650,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             + this.buildOrderBy()
             + this.buildLimit()
         // console.log(`\n${sql}\n`)
-        const params = sortKeys(this.params)
+        const params = sortParams(this.params)
         const into = this._select.length == 0 ? this.tables[0] : undefined
         return { sql, params, into }
     }

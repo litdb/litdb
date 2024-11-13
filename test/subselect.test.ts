@@ -3,7 +3,7 @@ import { sqlite as $ } from '../src'
 import { Contact, customerOrderTables, Order, OrderItem } from './data'
 import { str } from './utils'
 
-describe('SQLite SUB SELECT Tests', () => {
+describe.only('SQLite SUB SELECT Tests', () => {
 
     it ('Can embed EXISTS builder on Contact', () => {
         const contactId = 1
@@ -134,7 +134,7 @@ describe('SQLite SUB SELECT Tests', () => {
                                   WHERE "sku" IN ($_5,$_6,$_7,$_8,$_9) 
                                   GROUP BY "id" 
                                   ORDER BY SUM("qty") DESC 
-                                  LIMIT $_50 OFFSET $_51) 
+                                  LIMIT $_10 OFFSET $_11) 
                 ORDER BY o."total" 
                 LIMIT $limit 
                 OFFSET $offset 

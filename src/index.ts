@@ -8,7 +8,7 @@ import { Sql } from "./sql"
 import { Meta } from "./meta"
 import { Schema } from "./schema"
 import { Inspect, Watch } from "./inspect"
-import { IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, snakeCase, asType, asRef } from "./utils"
+import { IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, sortParams, snakeCase, asType, asRef } from "./utils"
 import { converterFor, DateTimeConverter } from "./converters"
 import { table, column, Table, DefaultValues, } from "./model"
 import { Sqlite, SqliteTypes } from "./sqlite/driver"
@@ -51,5 +51,5 @@ export {
   Sqlite, SqliteDialect, SqliteSchema, SqliteTypes,                 sqlite,
   MySql, MySqlDialect, MySqlSchema, MySqlTypes,                     mysql,
   PostgreSql, PostgreSqlDialect, PostgreSqlSchema, PostgreSqlTypes, postgres,
-  IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, snakeCase, asType, asRef,
+  IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, sortParams, snakeCase, asType, asRef,
 }
