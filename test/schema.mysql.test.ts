@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { mysql as $, mysql, Table } from '../src'
+import { mysql as $, Table } from '../src'
 import { Contact, Order } from './data'
 import { ColumnReference } from '../src/types'
 import { str } from './utils'
@@ -90,10 +90,10 @@ describe('MySQL Schema Tests', () => {
             ${name} TEXT NOT NULL, 
             ${cost} DECIMAL(15,2) NOT NULL
         );
-        CREATE UNIQUE INDEX idx_product_name ON ${f('Product')} (${name});`))
+        CREATE UNIQUE INDEX idx_product_name ON ${f('Product')} (${name}(255));`))
         
         expect(str($.schema.createTable(Order))).toBe(str(`CREATE TABLE ${f('Order')} (
-            ${id} INTEGER PRIMARY KEY AUTOINCREMENT, 
+            ${id} INTEGER PRIMARY KEY AUTO_INCREMENT, 
             ${contactId} INTEGER NOT NULL, 
             ${total} DECIMAL(15,2) NOT NULL,
             ${createdAt} DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -101,7 +101,7 @@ describe('MySQL Schema Tests', () => {
         );`))
         
         expect(str($.schema.createTable(OrderItem))).toBe(str(`CREATE TABLE ${f('OrderItem')} (
-            ${id} INTEGER PRIMARY KEY AUTOINCREMENT,
+            ${id} INTEGER PRIMARY KEY AUTO_INCREMENT,
             ${orderId} INTEGER NOT NULL,
             ${sku} TEXT NOT NULL,
             ${qty} INTEGER NOT NULL,

@@ -3,12 +3,15 @@ import { Sql } from "../sql"
 import { Schema } from "../schema"
 import { Meta } from "../meta"
 
+export type DriverExt = Driver & {
+    $:ReturnType<typeof Sql.create>, 
+    types: DialectTypes, 
+    variables:{ [key: string]: string }
+}
+
 export class SqliteSchema extends Schema {
 
-    constructor(public driver:Driver & {
-        $:ReturnType<typeof Sql.create>, 
-        types: DialectTypes, 
-        variables:{ [key: string]: string }}) {
+    constructor(public driver:DriverExt) {
         super(driver.dialect)
     }
 
@@ -16,14 +19,14 @@ export class SqliteSchema extends Schema {
         return "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%'"
     }
 
-    sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition): string {
-        const unique = column.unique ? 'UNIQUE INDEX' : 'INDEX'
-        const name = `idx_${table.name}_${column.name}`.toLowerCase()
-        return `CREATE ${unique} ${name} ON ${this.dialect.quoteTable(table.name)} (${this.dialect.quoteColumn(column.name)})`
+    sqlIndexDefinition(table: TableDefinition, col: ColumnDefinition): string {
+        const unique = col.unique ? 'UNIQUE INDEX' : 'INDEX'
+        const name = `idx_${table.name}_${col.name}`.toLowerCase()
+        return `CREATE ${unique} ${name} ON ${this.dialect.quoteTable(table.name)} (${this.dialect.quoteColumn(col.name)})`
     }
 
-    sqlForeignKeyDefinition(table: TableDefinition, column: ColumnDefinition): string {
-        const ref = column.references
+    sqlForeignKeyDefinition(table: TableDefinition, col: ColumnDefinition): string {
+        const ref = col.references
         if (!ref) return ''
         const $ = this.driver.$
         const refMeta = Array.isArray(ref.table)
@@ -34,43 +37,51 @@ export class SqliteSchema extends Schema {
                 ? ref.table[1].map(x => $.quoteColumn(x)).join(',') 
                 : $.quoteColumn(ref.table[1])
             : refMeta.columns.filter(x => x.primaryKey).map(x => $.quoteColumn(x.name)).join(',')
-        let sql = `FOREIGN KEY (${$.quoteColumn(column.name)}) REFERENCES ${$.quoteTable(refMeta.tableName)}${refKeys ? '(' + refKeys + ')' : ''}`
+        let sql = `FOREIGN KEY (${$.quoteColumn(col.name)}) REFERENCES ${$.quoteTable(refMeta.tableName)}${refKeys ? '(' + refKeys + ')' : ''}`
         if (ref.on) {
             sql += ` ON ${ref.on[0]} ${ref.on[1]}`
         }
         return sql
     }
 
-    sqlColumnDefinition(column: ColumnDefinition): string {
-        let dataType = column.type
-        let type = this.driver.types.native.includes(dataType as ColumnType) ? dataType : undefined
+    dataType(col: ColumnDefinition): string {
+        let dt = col.type
+        let type = this.driver.types.native.includes(dt as ColumnType) ? dt : undefined
         if (!type) {
-            for (const [sqliteType, typeMapping] of Object.entries(this.driver.types.map)) {
-                if (typeMapping.includes(dataType as ColumnType)) {
-                    type = sqliteType
+            for (const [dbType, typeMapping] of Object.entries(this.driver.types.map)) {
+                if (typeMapping.includes(dt as ColumnType)) {
+                    type = dbType
                     break
                 }
             }
         }
-        if (!type) type = dataType
+        return !type
+            ? dt
+            : type
+    }
 
-        let sb = `${this.dialect.quoteColumn(column.name)} ${type}`
-        if (column.primaryKey) {
+    defaultValue(col: ColumnDefinition): string {
+        return col.defaultValue
+            ? ' DEFAULT ' + (this.driver.variables[col.defaultValue] ?? col.defaultValue)
+            : ''
+    }
+
+    sqlColumnDefinition(col: ColumnDefinition): string {
+        let type = this.dataType(col)
+        let sb = `${this.dialect.quoteColumn(col.name)} ${type}`
+        if (col.primaryKey) {
             sb += ' PRIMARY KEY'
         }
-        if (column.autoIncrement) {
+        if (col.autoIncrement) {
             sb += ' AUTOINCREMENT'
         }
-        if (column.required) {
+        if (col.required) {
             sb += ' NOT NULL'
         }
-        if (column.unique && !column.index) {
+        if (col.unique && !col.index) {
             sb += ' UNIQUE'
         }
-        if (column.defaultValue) {
-            const val = this.driver.variables[column.defaultValue] ?? column.defaultValue
-            sb += ` DEFAULT ${val}`
-        }
+        sb += this.defaultValue(col)
         return sb
     }
 

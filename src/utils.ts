@@ -39,8 +39,6 @@ export class IS {
     }
 }
 
-export function padInt(n: number) { return n < 10 ? '0' + n : n }
-
 export function toDate(s: string|any) { return !s ? null 
     : IS.date(s)
         ? s as Date 
@@ -49,8 +47,10 @@ export function toDate(s: string|any) { return !s ? null
             : new Date(s)
 }
 
-export function toLocalISOString(d: Date = new Date()) {
-    return `${d.getFullYear()}-${padInt(d.getMonth() + 1)}-${padInt(d.getDate())}T${padInt(d.getHours())}:${padInt(d.getMinutes())}:${padInt(d.getSeconds())}`
+export function pad(n: number) { return n < 10 ? '0' + n : n }
+
+export function dateISOString(d: Date = new Date()) {
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
 export function propsWithValues(obj:Record<string,any>) {

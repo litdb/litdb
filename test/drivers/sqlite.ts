@@ -161,7 +161,7 @@ class Sqlite implements Driver
     types: DialectTypes
 
     converters: { [key: string]: TypeConverter } = {
-        ...converterFor(DateTimeConverter.instance, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
+        ...converterFor(new DateTimeConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
     }
 
     constructor() {
@@ -177,48 +177,6 @@ class Sqlite implements Driver
     quoteTable(name: string): string { return this.quote(this.strategy.tableName(name)) }
 
     quoteColumn(name: string): string { return this.quote(this.strategy.columnName(name)) }
-
-    sqlTableNames(): string {
-        return "SELECT name FROM sqlite_master WHERE type ='table' AND name NOT LIKE 'sqlite_%'"
-    }
-
-    sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition): string {
-        const unique = column.unique ? 'UNIQUE INDEX' : 'INDEX'
-        return `CREATE ${unique} idx_${table.name}_${column.name} ON ${this.quoteTable(table.name)} (${this.quoteColumn(column.name)})`
-    }
-
-    sqlColumnDefinition(column: ColumnDefinition): string {
-        let dataType = column.type
-        let type = this.types.native.includes(dataType as ColumnType) ? dataType : undefined
-        if (!type) {
-            for (const [sqliteType, typeMapping] of Object.entries(this.types.map)) {
-                if (typeMapping.includes(dataType as ColumnType)) {
-                    type = sqliteType
-                    break
-                }
-            }
-        }
-        if (!type) type = dataType
-
-        let sb = `${this.quoteColumn(column.name)} ${type}`
-        if (column.primaryKey) {
-            sb += ' PRIMARY KEY'
-        }
-        if (column.autoIncrement) {
-            sb += ' AUTOINCREMENT'
-        }
-        if (column.required) {
-            sb += ' NOT NULL'
-        }
-        if (column.unique && !column.index) {
-            sb += ' UNIQUE'
-        }
-        if (column.defaultValue) {
-            const val = this.variables[column.defaultValue] ?? column.defaultValue
-            sb += ` DEFAULT ${val}`
-        }
-        return sb
-    }
 
     sqlLimit(offset?: number, limit?: number): Fragment {
         if (offset == null && limit == null)

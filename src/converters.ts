@@ -11,7 +11,6 @@ export function converterFor(converter:TypeConverter, ...dataTypes:string[]) {
 
 export class DateTimeConverter implements TypeConverter
 {
-    static instance = new DateTimeConverter()
     toDb(value: any) {
         const d = toDate(value)
         return d ? d.toISOString() : null

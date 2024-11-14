@@ -8,7 +8,6 @@ import { Sql } from "./sql"
 import { Meta } from "./meta"
 import { Schema } from "./schema"
 import { Inspect, Watch } from "./inspect"
-import { IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, sortParams, snakeCase, asType, asRef } from "./utils"
 import { converterFor, DateTimeConverter } from "./converters"
 import { table, column, Table, DefaultValues, } from "./model"
 import { Sqlite, SqliteTypes } from "./sqlite/driver"
@@ -20,6 +19,10 @@ import { PostgreSqlDialect } from "./postgres/dialect"
 import { SqliteSchema } from "./sqlite/schema"
 import { MySqlSchema } from "./mysql/schema"
 import { PostgreSqlSchema } from "./postgres/schema"
+import { 
+  IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, sortParams, snakeCase, asType, asRef,
+  pad, toDate, dateISOString, uniqueKeys,
+} from "./utils"
 
 const sqlite = (() => { return Sqlite.init().$ })()
 const mysql = (() => { return MySql.init().$ })()
@@ -48,4 +51,5 @@ export {
   MySql, MySqlDialect, MySqlSchema, MySqlTypes,                     mysql,
   PostgreSql, PostgreSqlDialect, PostgreSqlSchema, PostgreSqlTypes, postgres,
   IS, pick, omit, toStr, mergeParams, nextParam, nextParamVal, sortParams, snakeCase, asType, asRef,
+  pad, toDate, dateISOString, uniqueKeys,
 }

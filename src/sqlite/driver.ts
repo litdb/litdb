@@ -53,7 +53,7 @@ export class Sqlite implements Driver
     types: DialectTypes
 
     converters: { [key: string]: TypeConverter } = {
-        ...converterFor(DateTimeConverter.instance, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
+        ...converterFor(new DateTimeConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
     }
 
     constructor() {

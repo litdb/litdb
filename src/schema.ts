@@ -12,7 +12,7 @@ type DeleteOptions = {
     where?:Fragment|Fragment[]
 }
 
-export const DriverRequired = `Missing Driver Implementation, see: https://github.com/litdb/litdb`
+export const DriverRequired = `Missing Driver Implementation, see: https://litdb.dev/#litdb-drivers`
 export const DriverRequiredProxy = new Proxy({}, {
     get:(target: {}, key:string|symbol) => {
         throw new Error(DriverRequired)
@@ -36,7 +36,7 @@ export class Schema {
     constructor(public dialect:Dialect){}
 
     converters: { [key: string]: TypeConverter } = {
-        ...converterFor(DateTimeConverter.instance, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
+        ...converterFor(new DateTimeConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
     }
 
     sqlTableNames(schema?: string):string { throw new Error(DriverRequired) }
