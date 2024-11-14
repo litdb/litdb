@@ -50,6 +50,7 @@ describe('SQLite Driver Example Tests', () => {
         expect(contacts.length).toBe(sorted.ids.length)
         const contactsCount = db.value($.from(Contact).select`COUNT(*)`)      // => number
         expect(contactsCount).toBe(sorted.ids.length)
+        expect(db.value($.from(Contact).rowCount())).toEqual(contactsCount)
         const emails = db.column($.from(Contact).select(c => $`${c.email}`))  // => string[]
         expect(emails.toSorted()).toEqual(sorted.emails)
         const dbContactsArray = db.arrays($.from(Contact))                    // => any[][]
