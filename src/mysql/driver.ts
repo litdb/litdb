@@ -30,7 +30,6 @@ export class MySqlTypes implements DialectTypes {
         "DECIMAL(15,2)": ["MONEY"],
     }
 }
-//
 
 export class MySql extends Sqlite
 {
