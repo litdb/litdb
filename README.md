@@ -73,6 +73,7 @@ Use with [postgres.js](https://github.com/porsager/postgres) client:
 ```sh
 npm install @litdb/postgres
 ```
+
 ### MySql
 
 Use with [node-mysql2](https://github.com/sidorares/node-mysql2) client:
@@ -100,16 +101,18 @@ This is an example of using the Bun SQLite driver:
 **db.ts**
 
 ```ts
-import { connect } from "@litdb/bun-sqlite"
+import { connect } from "./drivers/sqlite"
 
 export const connection = connect("app.db")
-export const { $, async, sync } = connection
+export const { $, sync:db, async, native } = connection
 ```
+
+> When needed use `native` to access underlying driver
 
 **app.ts**
 
 ```ts
-import { $, sync as db } from "./db"
+import { $, db } from "./db"
 import { Contact } from "./models"
 
 db.dropTable(Contact)
