@@ -41,4 +41,8 @@ export class PostgreSqlSchema extends SqliteSchema {
     sqlRowCount(sql:string) {
         return `SELECT COUNT(*)::int FROM (${sql}) AS COUNT`
     }
+
+    sqlTableNames() {
+        return "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
+    }
 }
