@@ -103,7 +103,7 @@ This is an example of using the Bun SQLite driver:
 ```ts
 import { connect } from "./drivers/sqlite"
 
-export const connection = connect("app.db")
+export const connection = connect("app.db") // WAL enabled by default
 export const { $, sync:db, async, native } = connection
 ```
 
