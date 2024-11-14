@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { sync as db, $ } from './db'
+import { $, db } from './db'
 import { table, column, pick } from '../src'
 
 @table() class Contact {
