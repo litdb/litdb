@@ -1,6 +1,6 @@
 # litdb
 
-litdb contains type-safe SQL builders for TypeScript/JavaScript for writing expressive SQL you know that's type-safe, parameterized & portable across SQLite, MySQL & PostgreSQL. 
+litdb contains LINQ-like type-safe SQL builders for TypeScript/JavaScript for writing type-safe expressive SQL that's parameterized & portable across SQLite, MySQL & PostgreSQL.
 
 Website: https://litdb.dev
 
