@@ -220,12 +220,12 @@ export class SyncDbConnection {
 
     dropTable<Table extends ClassParam>(table:Table) { 
         let stmt = this.connection.prepareSync(this.schema.dropTable(table) )
-        return stmt.execSync()
+        stmt.runSync()
     }
 
     createTable<Table extends ClassParam>(table:Table) {
         let stmt = this.connection.prepareSync(this.schema.createTable(table))
-        return stmt.execSync()
+        stmt.runSync()
     }
 
     prepareSync<T>(str: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
