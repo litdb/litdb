@@ -34,9 +34,9 @@ body:
     id: system-info
     attributes:
       label: System Info
-      description: The OS, litdb packages and JS Runtime you're using (e.g. Node.js, Bun, Deno)
+      description: The OS, litdb packages, RDBMS and JS Runtime you're using (e.g. Node.js, Bun, Deno)
       render: shell
-      placeholder: System, litdb, versions, JS Runtime
+      placeholder: OS, litdb packages, JS Runtime, RDBMS, versions
     validations:
       required: true
   - type: textarea
