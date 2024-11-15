@@ -20,7 +20,7 @@ export class MySqlSchema extends Schema {
 
     constructor(driver:Driver, $:ReturnType<typeof Sql.create>, types:DialectTypes) {
         super(driver, $, types)
-        Object.assign(driver.schema.converters, 
+        Object.assign(this.converters, 
             converterFor(new DateConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"))
     }
 
