@@ -157,21 +157,6 @@ class Sqlite implements Driver
         this.name = this.constructor.name
         this.schema = this.$.schema = new SqliteSchema(this, this.$, new SqliteTypes())
     }
-
-    quote(name: string): string { return `"${name}"` }
-    
-    quoteTable(name: string): string { return this.quote(this.strategy.tableName(name)) }
-
-    quoteColumn(name: string): string { return this.quote(this.strategy.columnName(name)) }
-
-    sqlLimit(offset?: number, limit?: number): Fragment {
-        if (offset == null && limit == null)
-            throw new Error(`Invalid argument sqlLimit(${offset}, ${limit})`)
-        const frag = offset
-            ? this.$.sql(`LIMIT $limit OFFSET $offset`, { offset, limit:limit ?? -1 })
-            : this.$.sql(`LIMIT $limit`, { limit })
-        return frag
-    }
 }
 
 class SqliteConnection implements Connection, SyncConnection {
