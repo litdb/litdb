@@ -1,7 +1,7 @@
-import { SqliteSchema } from "../sqlite/schema"
+import { Schema } from "../schema"
 import { ColumnDefinition } from "../types"
 
-export class PostgreSqlSchema extends SqliteSchema {
+export class PostgreSqlSchema extends Schema {
 
     sqlColumnDefinition(col: ColumnDefinition): string {
         let type = this.dataType(col)
@@ -9,7 +9,7 @@ export class PostgreSqlSchema extends SqliteSchema {
             type = type == 'BIGINT' ? 'BIGSERIAL' : 'SERIAL'
         }
 
-        let sb = `${this.dialect.quoteColumn(col.name)} ${type}`
+        let sb = `${this.quoteColumn(col.name)} ${type}`
         if (col.primaryKey) {
             sb += ' PRIMARY KEY'
         }
@@ -25,9 +25,5 @@ export class PostgreSqlSchema extends SqliteSchema {
 
     sqlRowCount(sql:string) {
         return `SELECT COUNT(*)::int FROM (${sql}) AS COUNT`
-    }
-
-    sqlTableNames() {
-        return "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
     }
 }

@@ -20,11 +20,11 @@ export class MySqlDialect implements Dialect {
     sqlLimit(offset?: number, limit?: number): Fragment {
         if (offset == null && limit == null)
             throw new Error(`Invalid argument sqlLimit(${offset}, ${limit})`)
-        const frag = offset
+        const f = offset
             ? (limit 
                 ? this.$.sql(`LIMIT $offset, $limit`, { offset, limit }) 
                 : this.$.sql(`LIMIT $offset, 18446744073709551615`, { offset }))
             : this.$.sql(`LIMIT $limit`, { limit })
-        return frag
+        return f
     }
 }

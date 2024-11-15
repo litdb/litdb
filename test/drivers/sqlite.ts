@@ -1,11 +1,10 @@
 import { Database, Statement as BunStatement } from "bun:sqlite"
 import type { 
-    ColumnDefinition, Driver, Connection, SyncConnection, DbBinding, Statement, TableDefinition, TypeConverter, Fragment, SyncStatement, Dialect,
-    Changes, ColumnType, Constructor,
+    Driver, Connection, SyncConnection, DbBinding, Statement, Fragment, SyncStatement, Dialect,
+    Changes, Constructor,
 } from "../../src"
 import { 
-    Sql, DbConnection, NamingStrategy, SyncDbConnection, DefaultValues, converterFor, DateTimeConverter, 
-    DialectTypes, SqliteDialect, DefaultStrategy, Schema, IS,
+    Sql, DbConnection, NamingStrategy, SyncDbConnection, SqliteDialect, DefaultStrategy, Schema, IS,
     SqliteSchema, SqliteTypes,
 } from "../../src"
 
@@ -151,25 +150,12 @@ class Sqlite implements Driver
     schema:Schema
     $:ReturnType<typeof Sql.create>
     strategy:NamingStrategy = new DefaultStrategy()
-    variables: { [key: string]: string } = {
-        [DefaultValues.NOW]: 'CURRENT_TIMESTAMP',
-        [DefaultValues.MAX_TEXT]: 'TEXT',
-        [DefaultValues.MAX_TEXT_UNICODE]: 'TEXT',
-        [DefaultValues.TRUE]: '1',
-        [DefaultValues.FALSE]: '0',
-    }
-    types: DialectTypes
-
-    converters: { [key: string]: TypeConverter } = {
-        ...converterFor(new DateTimeConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
-    }
 
     constructor() {
         this.dialect = new SqliteDialect()
         this.$ = this.dialect.$
         this.name = this.constructor.name
-        this.schema = this.$.schema = new SqliteSchema(this)
-        this.types = new SqliteTypes()
+        this.schema = this.$.schema = new SqliteSchema(this, this.$, new SqliteTypes())
     }
 
     quote(name: string): string { return `"${name}"` }

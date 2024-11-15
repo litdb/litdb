@@ -365,7 +365,7 @@ export class SnakeCaseStrategy implements NamingStrategy {
     tableFromDef(def:TableDefinition) : string { return snakeCase(def.alias ?? def.name) }
 }
 
-class SyncFilterConnection implements SyncConnection {
+class SyncFilterConn implements SyncConnection {
     $:ReturnType<typeof Sql.create>
     orig:SyncConnection & { $:ReturnType<typeof Sql.create> }
 
@@ -393,10 +393,10 @@ class SyncFilterConnection implements SyncConnection {
 export function useFilterSync(
     db:SyncDbConnection, filter:(sql: TemplateStringsArray | string, params: DbBinding[]) => void) 
     : { release:() => void } {
-    return new SyncFilterConnection(db, filter)
+    return new SyncFilterConn(db, filter)
 }
 
-class FilterConnection implements Connection {
+class FilterConn implements Connection {
     $:ReturnType<typeof Sql.create>
     orig:Connection & { $:ReturnType<typeof Sql.create> }
 
@@ -424,5 +424,5 @@ class FilterConnection implements Connection {
 export function useFilter(
     db:DbConnection, filter:(sql: TemplateStringsArray | string, params: DbBinding[]) => void) 
     : { release:() => void } {
-    return new FilterConnection(db, filter)
+    return new FilterConn(db, filter)
 }

@@ -184,8 +184,6 @@ export interface Driver
     get dialect(): Dialect
 
     get schema(): Schema
-
-    get converters(): { [key: string]: TypeConverter }
 }
     
 export interface Connection {

@@ -1,7 +1,5 @@
-import type { Driver, NamingStrategy, TypeConverter, DialectTypes, ColumnType, Dialect } from "../types"
+import type { Driver, NamingStrategy, DialectTypes, ColumnType, Dialect } from "../types"
 import { ConnectionBase, DefaultStrategy } from "../connection"
-import { converterFor, DateTimeConverter } from "../converters"
-import { DefaultValues } from "../model"
 import { Sql } from "../sql"
 import { SqliteDialect } from "./dialect"
 import { Schema } from "../schema"
@@ -43,25 +41,12 @@ export class Sqlite implements Driver
     schema:Schema
     strategy:NamingStrategy = new DefaultStrategy()
     $:ReturnType<typeof Sql.create>
-    variables: { [key: string]: string } = {
-        [DefaultValues.NOW]: 'CURRENT_TIMESTAMP',
-        [DefaultValues.MAX_TEXT]: 'TEXT',
-        [DefaultValues.MAX_TEXT_UNICODE]: 'TEXT',
-        [DefaultValues.TRUE]: '1',
-        [DefaultValues.FALSE]: '0',
-    }
-    types: DialectTypes
-
-    converters: { [key: string]: TypeConverter } = {
-        ...converterFor(new DateTimeConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
-    }
 
     constructor() {
         this.name = this.constructor.name
         this.dialect = new SqliteDialect()
         this.$ = this.dialect.$
-        this.types = new SqliteTypes()
-        this.schema = this.$.schema = new SqliteSchema(this)
+        this.schema = this.$.schema = new SqliteSchema(this, this.$, new SqliteTypes())
     }
 }
 

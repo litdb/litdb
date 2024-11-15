@@ -6,7 +6,7 @@ import { Meta } from "./meta"
 import { asRef, asType, IS, mergeParams, nextParamVal, } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
-import { Schema } from "./schema"
+import { DriverRequiredProxy, Schema } from "./schema"
 
 export class Sql
 {
@@ -37,14 +37,14 @@ export class Sql
                 for (let i = 0; i < strings.length; i++) {
                     sb += strings[i]
                     if (i >= params.length) continue
-                    const value = params[i]
-                    if (IS.sym(value)) {
+                    const val = params[i]
+                    if (IS.sym(val)) {
                         // include symbol literal as-is
-                        sb += value.description ?? ''
-                    } else if (IS.arr(value)) {
+                        sb += val.description ?? ''
+                    } else if (IS.arr(val)) {
                         // expand arrays into multiple params
                         let sbIn = ''
-                        for (const item of value) {
+                        for (const item of val) {
                             const paramIndex = Object.keys(sqlParams).length + 1
                             const name = `_${paramIndex}`
                             if (sbIn.length) sbIn += ','
@@ -52,12 +52,12 @@ export class Sql
                             sqlParams[name] = item
                         }
                         sb += sbIn
-                    } else if (IS.rec(value) && value.$ref) {
+                    } else if (IS.rec(val) && val.$ref) {
                         // if referencing proxy itself, return its quoted tableName
-                        sb += dialect.quoteTable(Meta.assert(value.$ref.cls).tableName)
-                    } else if (IS.obj(value) && IS.fn(value.build)) {
+                        sb += dialect.quoteTable(Meta.assert(val.$ref.cls).tableName)
+                    } else if (IS.obj(val) && IS.fn(val.build)) {
                         // Merge params of SqlBuilder and append SQL
-                        const frag = (value as SqlBuilder).build()
+                        const frag = (val as SqlBuilder).build()
                         // Replace named params used in SQL Builders
                         const replaceParams = ['limit','offset']
                         if (Object.keys(frag.params).some(x => replaceParams.includes(x))) {
@@ -72,15 +72,15 @@ export class Sql
                             }
                         }
                         sb += mergeParams(sqlParams, frag).replaceAll('\n', '\n      ')
-                    } else if (IS.obj(value) && IS.str(value.sql)) {
+                    } else if (IS.obj(val) && IS.str(val.sql)) {
                         // Merge params of Sql Fragment and append SQL
-                        const frag = value as Fragment
+                        const frag = val as Fragment
                         sb += mergeParams(sqlParams, frag).replaceAll('\n', '\n      ')
-                    } else if (value) {
+                    } else if (val) {
                         const paramIndex = Object.keys(sqlParams).length + 1
                         const name = `_${paramIndex}`
                         sb += `$${name}`
-                        sqlParams[name] = value
+                        sqlParams[name] = val
                     }
                 }
                 return ({ sql:sb, params:sqlParams })
@@ -88,7 +88,7 @@ export class Sql
                 return ({ sql:strings, params:params[0] })
             } else throw new Error(`sql(${typeof strings}) is invalid`)
         }
-        $.schema = new Schema(dialect)
+        $.schema = DriverRequiredProxy as Schema
         $.dialect = dialect
         $.quote = dialect.quote.bind(dialect)
         $.quoteColumn = dialect.quoteColumn.bind(dialect)
@@ -152,7 +152,6 @@ export class Sql
         return $
     }
 }
-
 
 export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBuilder<First<Tables>> {
     get table() { return this.tables[0] as First<Tables> }

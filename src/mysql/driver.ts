@@ -1,9 +1,11 @@
-import type { ColumnType, DialectTypes, Driver } from "../types"
+import type { ColumnType, DialectTypes, Driver, TypeConverter } from "../types"
 import { Sqlite } from "../sqlite/driver"
 import { MySqlDialect } from "./dialect"
 import { MySqlSchema } from "./schema"
 import { ConnectionBase } from "../connection"
 import { Schema } from "../schema"
+import { dateISOString, toDate } from "../utils"
+import { converterFor } from "../converters"
 
 export class MySqlTypes implements DialectTypes {
     // use as-is
@@ -47,9 +49,23 @@ export class MySql extends Sqlite
         super()
         this.dialect = new MySqlDialect()
         this.$ = this.dialect.$
-        this.types = new MySqlTypes()
-        this.schema = this.$.schema = new MySqlSchema(this)
+        this.schema = this.$.schema = new MySqlSchema(this, this.$, new MySqlTypes())
+        Object.assign(this.schema.converters, 
+            converterFor(new DateConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"))
     }
 }
 
 export class MySqlConnection extends ConnectionBase {}
+
+class DateConverter implements TypeConverter
+{
+    toDb(value: any) {
+        const d = toDate(value)
+        return d ? dateISOString(d).replace('T',' ') : null
+    }
+    fromDb(value: any) {
+        if (!value) return null
+        return toDate(value)
+    }
+}
+

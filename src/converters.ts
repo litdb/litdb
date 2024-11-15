@@ -3,8 +3,8 @@ import { toDate } from "./utils"
 
 export function converterFor(converter:TypeConverter, ...dataTypes:string[]) {
     const to : { [key: string]: TypeConverter } = {}
-    for (const dataType of dataTypes) { 
-        to[dataType] = converter
+    for (const type of dataTypes) { 
+        to[type] = converter
     }
     return to
 }

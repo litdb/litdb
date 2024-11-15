@@ -1,8 +1,13 @@
 import { converterFor, DateTimeConverter } from "./converters"
 import { Meta } from "./meta"
+import { DefaultValues } from "./model"
+import { Sql } from "./sql"
 import type { 
-    ClassInstance, ClassParam, DbBinding, Dialect, Fragment, ReflectMeta, ColumnDefinition, TableDefinition, 
-    TypeConverter
+    ClassInstance, ClassParam, DbBinding, Fragment, ReflectMeta, ColumnDefinition, TableDefinition, 
+    TypeConverter,
+    Driver,
+    DialectTypes,
+    ColumnType
 } from "./types"
 import { IS } from "./utils"
 
@@ -33,46 +38,120 @@ export function assertSql(sql: Fragment|any) {
 
 export class Schema {
     
-    constructor(public dialect:Dialect){}
+    variables: { [key: string]: string } = {
+        [DefaultValues.NOW]: 'CURRENT_TIMESTAMP',
+        [DefaultValues.MAX_TEXT]: 'TEXT',
+        [DefaultValues.MAX_TEXT_UNICODE]: 'TEXT',
+        [DefaultValues.TRUE]: '1',
+        [DefaultValues.FALSE]: '0',
+    }
 
     converters: { [key: string]: TypeConverter } = {
         ...converterFor(new DateTimeConverter, "DATE", "DATETIME", "TIMESTAMP", "TIMESTAMPZ"),
     }
 
-    sqlTableNames(schema?: string):string { throw new Error(DriverRequired) }
+    constructor(public driver:Driver, public $:ReturnType<typeof Sql.create>, public types:DialectTypes) {
+    }
 
-    sqlColumnDefinition(column: ColumnDefinition):string { throw new Error(DriverRequired) }
+    get dialect() { return this.driver.dialect }
+    quoteTable(name: string) { return this.dialect.quoteTable(name) }
+    quoteColumn(name: string) { return this.dialect.quoteColumn(name) }
 
-    sqlForeignKeyDefinition(table: TableDefinition, column: ColumnDefinition):string { throw new Error(DriverRequired) }
-
-    sqlIndexDefinition(table: TableDefinition, column: ColumnDefinition):string { throw new Error(DriverRequired) }
+    sqlTableNames() {
+        return "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
+    }
 
     sqlRowCount(sql:string) {
         return `SELECT COUNT(*) FROM (${sql}) AS COUNT`
     }
 
+    sqlIndexDefinition(table: TableDefinition, col: ColumnDefinition): string {
+        const unique = col.unique ? 'UNIQUE INDEX' : 'INDEX'
+        const name = `idx_${table.name}_${col.name}`.toLowerCase()
+        return `CREATE ${unique} ${name} ON ${this.quoteTable(table.name)} (${this.quoteColumn(col.name)})`
+    }
+
+    sqlForeignKeyDefinition(table: TableDefinition, col: ColumnDefinition): string {
+        const ref = col.references
+        if (!ref) return ''
+        const $ = this.$
+        const refMeta = Array.isArray(ref.table)
+            ? Meta.assert(ref.table[0])
+            : Meta.assert(ref.table)
+        const refKeys = Array.isArray(ref.table)
+            ? Array.isArray(ref.table[1]) 
+                ? ref.table[1].map(x => $.quoteColumn(x)).join(',') 
+                : $.quoteColumn(ref.table[1])
+            : refMeta.columns.filter(x => x.primaryKey).map(x => $.quoteColumn(x.name)).join(',')
+        let sql = `FOREIGN KEY (${$.quoteColumn(col.name)}) REFERENCES ${$.quoteTable(refMeta.tableName)}${refKeys ? '(' + refKeys + ')' : ''}`
+        if (ref.on) {
+            sql += ` ON ${ref.on[0]} ${ref.on[1]}`
+        }
+        return sql
+    }
+
+    dataType(col: ColumnDefinition): string {
+        let dt = col.type
+        let type = this.types.native.includes(dt as ColumnType) ? dt : undefined
+        if (!type) {
+            for (const [dbType, typeMap] of Object.entries(this.types.map)) {
+                if (typeMap.includes(dt as ColumnType)) {
+                    type = dbType
+                    break
+                }
+            }
+        }
+        return !type
+            ? dt
+            : type
+    }
+
+    defaultValue(col: ColumnDefinition): string {
+        return col.defaultValue
+            ? ' DEFAULT ' + (this.variables[col.defaultValue] ?? col.defaultValue)
+            : ''
+    }
+
+    sqlColumnDefinition(col: ColumnDefinition): string {
+        let type = this.dataType(col)
+        let sb = `${this.quoteColumn(col.name)} ${type}`
+        if (col.primaryKey) {
+            sb += ' PRIMARY KEY'
+        }
+        if (col.autoIncrement) {
+            sb += ' AUTOINCREMENT'
+        }
+        if (col.required) {
+            sb += ' NOT NULL'
+        }
+        if (col.unique && !col.index) {
+            sb += ' UNIQUE'
+        }
+        sb += this.defaultValue(col)
+        return sb
+    }
+
     dropTable(table:ClassParam) {
-        const meta = Meta.assert(table)
-        let sql = `DROP TABLE IF EXISTS ${this.dialect.quoteTable(meta.tableName)}`
+        let sql = `DROP TABLE IF EXISTS ${this.quoteTable(Meta.assert(table).tableName)}`
         //console.log('Schema.dropTable', sql)
         return sql
     }
 
     createTable(table:ClassParam) {
-        const meta = Meta.assert(table)
-        const columns = meta.columns
-        let sqlColumns = columns.map(c => this.sqlColumnDefinition(c))
-        const foreignKeys = columns.filter(c => c.references)
-            .map(c => this.sqlForeignKeyDefinition(meta.table, c))
+        const M = Meta.assert(table)
+        const cols = M.columns
+        let sqlCols = cols.map(c => this.sqlColumnDefinition(c))
+        const foreignKeys = cols.filter(c => c.references)
+            .map(c => this.sqlForeignKeyDefinition(M.table, c))
         const definitions = [
-            sqlColumns,
+            sqlCols,
             foreignKeys,
         ].filter(x => x.length)
             .map(x => x.join(',\n  '))
             .join(',\n  ')
-        let sql = `CREATE TABLE ${this.dialect.quoteTable(meta.tableName)} (\n  ${definitions}\n);\n`
-        const indexes = columns.filter(c => c.index)
-            .map(c => `${this.sqlIndexDefinition(meta.table, c)};`);
+        let sql = `CREATE TABLE ${this.quoteTable(M.tableName)} (\n  ${definitions}\n);\n`
+        const indexes = cols.filter(c => c.index)
+            .map(c => `${this.sqlIndexDefinition(M.table, c)};`);
         if (indexes.length > 0) {
             sql += indexes.join('\n')
         }
@@ -81,60 +160,59 @@ export class Schema {
     }
 
     insert(table:ClassParam, options?:{ onlyProps?:string[] }) {
-        const meta = Meta.assert(table)
-        let props = meta.props.filter(x => x.column!!)
+        const M = Meta.assert(table)
+        let props = M.props.filter(x => x.column!!)
         if (options?.onlyProps) {
             props = props.filter(c => options.onlyProps!.includes(c.name))
         }
-        let columns = props.map(x => x.column!).filter(c => !c.autoIncrement && !c.defaultValue)
-        let sqlColumns = columns.map(c => `${this.dialect.quoteColumn(c.name)}`).join(', ')
-        let sqlParams = columns.map((c) => `$${c.name}`).join(', ')
-        let sql = `INSERT INTO ${this.dialect.quoteTable(meta.tableName)} (${sqlColumns}) VALUES (${sqlParams})`
+        let cols = props.map(x => x.column!).filter(c => !c.autoIncrement && !c.defaultValue)
+        let sqlCols = cols.map(c => `${this.quoteColumn(c.name)}`).join(', ')
+        let sqlParams = cols.map((c) => `$${c.name}`).join(', ')
+        let sql = `INSERT INTO ${this.quoteTable(M.tableName)} (${sqlCols}) VALUES (${sqlParams})`
         //console.log('Schema.insert', sql)
         return sql
     }
 
     update(table:ClassParam, options?:{ onlyProps?:string[] }) {
-        const meta = Meta.assert(table)
+        const M = Meta.assert(table)
         let props = options?.onlyProps
-            ? meta.props.filter(c => options.onlyProps!.includes(c.name) || c.column?.primaryKey)
-            : meta.props.filter(x => x.column!!)
+            ? M.props.filter(c => options.onlyProps!.includes(c.name) || c.column?.primaryKey)
+            : M.props.filter(x => x.column!!)
 
-        const primaryKeys = props.filter(c => c.column?.primaryKey)
-        if (!primaryKeys.length)
-            throw new Error(`${meta.name} does not have a PRIMARY KEY`)
+        if (!props.filter(c => c.column?.primaryKey).length)
+            throw new Error(`${M.name} does not have a PRIMARY KEY`)
 
-        const columns = props.map(x => x.column!)
-        const setColumns = columns.filter(c => !c.primaryKey)
-        const whereColumns = columns.filter(c => c.primaryKey)
-        const setSql = setColumns.map(c => `${this.dialect.quoteColumn(c.name)}=$${c.name}`).join(', ')
-        const whereSql = whereColumns.map(c => `${this.dialect.quoteColumn(c.name)} = $${c.name}`).join(' AND ')
-        let sql = `UPDATE ${this.dialect.quoteTable(meta.tableName)} SET ${setSql}`
+        const cols = props.map(x => x.column!)
+        const setCols = cols.filter(c => !c.primaryKey)
+        const whereCols = cols.filter(c => c.primaryKey)
+        const setSql = setCols.map(c => `${this.quoteColumn(c.name)}=$${c.name}`).join(', ')
+        const whereSql = whereCols.map(c => `${this.quoteColumn(c.name)} = $${c.name}`).join(' AND ')
+        let sql = `UPDATE ${this.quoteTable(M.tableName)} SET ${setSql}`
         if (whereSql) {
             sql += ` WHERE ${whereSql}`
         } else {
-            throw new Error(`No WHERE clause exists for UPDATE ${meta.tableName}`)
+            throw new Error(`No WHERE clause exists for UPDATE ${M.tableName}`)
         }
         // console.log('Schema.update', sql)
         return sql
     }
 
     delete(table:ClassParam, options?:DeleteOptions) {
-        const meta = Meta.assert(table)
-        let props = meta.props.filter(x => x.column!!)
-        const columns = props.map(x => x.column!)
-        const whereColumns = columns.filter(c => c.primaryKey)
-        let whereSql = whereColumns.map(c => `${this.dialect.quoteColumn(c.name)} = $${c.name}`).join(' AND ')
+        const M = Meta.assert(table)
+        let props = M.props.filter(x => x.column!!)
+        const cols = props.map(x => x.column!)
+        const whereCols = cols.filter(c => c.primaryKey)
+        let whereSql = whereCols.map(c => `${this.quoteColumn(c.name)} = $${c.name}`).join(' AND ')
         if (options?.where) {
             let sql = whereSql ? ' AND ' : ' WHERE '
             const where = IS.arr(options.where) ? options.where : [options.where]
             whereSql += sql + where.join(' AND ')
         }
-        let sql = `DELETE FROM ${this.dialect.quoteTable(meta.tableName)}`
+        let sql = `DELETE FROM ${this.quoteTable(M.tableName)}`
         if (whereSql) {
             sql += ` WHERE ${whereSql}`
         } else {
-            throw new Error(`No WHERE clause exists for DELETE ${meta.tableName}`)
+            throw new Error(`No WHERE clause exists for DELETE ${M.tableName}`)
         }
         // console.log('Schema.delete', sql)
         return sql
@@ -142,17 +220,17 @@ export class Schema {
 
     toDbBindings(table:ClassInstance) {
         const values:DbBinding[] = []
-        const meta = Meta.assert(table.constructor as ReflectMeta)
-        const props = meta.props.filter(x => x.column!!)
+        const M = Meta.assert(table.constructor as ReflectMeta)
+        const props = M.props.filter(x => x.column!!)
 
         props.forEach(x => {
-            const value = table[x.column!.name]
-            const converter = this.converters[x.column!.type]
-            if (converter) {
-                const dbValue = converter.toDb(value)
-                values.push(dbValue)
+            const val = table[x.column!.name]
+            const conv = this.converters[x.column!.type]
+            if (conv) {
+                const dbVal = conv.toDb(val)
+                values.push(dbVal)
             } else {
-                values.push(value)
+                values.push(val)
             }
         })
         return values
@@ -160,19 +238,19 @@ export class Schema {
 
     toDbObject(table:ClassInstance, options?:{ onlyProps?:string[] }) {
         const values: { [key:string]: DbBinding } = {}
-        const meta = Meta.assert(table.constructor as ReflectMeta)
-        const props = meta.props.filter(x => x.column!!)
+        const M = Meta.assert(table.constructor as ReflectMeta)
+        const props = M.props.filter(x => x.column!!)
 
         for (const x of props) {
             if (options?.onlyProps && !options.onlyProps.includes(x.name)) continue
 
-            const value = table[x.name]
-            const converter = this.converters[x.column!.type]
-            if (converter) {
-                const dbValue = converter.toDb(value)
-                values[x.column!.name] = dbValue
+            const val = table[x.name]
+            const conv = this.converters[x.column!.type]
+            if (conv) {
+                const dbVal = conv.toDb(val)
+                values[x.column!.name] = dbVal
             } else {
-                values[x.column!.name] = value
+                values[x.column!.name] = val
             }
         }
         return values

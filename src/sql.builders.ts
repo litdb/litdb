@@ -127,22 +127,22 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         )
     }
 
-    copyInto(instance:WhereQuery<any>) {
-        instance.params = Object.assign({}, this.params)
-        instance._where = Array.from(this._where)
-        instance._joins = Array.from(this._joins)
-        return instance
+    copyInto(o:WhereQuery<any>) {
+        o.params = Object.assign({}, this.params)
+        o._where = Array.from(this._where)
+        o._joins = Array.from(this._joins)
+        return o
     }
 
     clone() : WhereQuery<Tables> {
-        const instance = new (this.constructor as any)(
+        const o = new (this.constructor as any)(
             this.$,
             [...this.tables],
             [...this.metas],
             [...this.refs]
         )
-        this.copyInto(instance)
-        return instance
+        this.copyInto(o)
+        return o
     }
 
     protected addJoin<NewTable extends Constructor<any>>(options:{ 
@@ -155,10 +155,10 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     }) : This<typeof this, [...Tables, NewTable]> {
         const table = options.cls as NewTable
         const ref = options?.ref ?? (options.as ? this.$.ref(table, options.as) : undefined)
-        const instance = this.createInstance(table, ref)
-        this.copyInto(instance as any)
+        const o = this.createInstance(table, ref)
+        this.copyInto(o as any)
 
-        let q = instance as WhereQuery<any>
+        let q = o as WhereQuery<any>
 
         // Fully qualify Table ref if it has no alias
         if (!q.refs[0].$ref.as) {
@@ -177,7 +177,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             on = qProtected.mergeParams(sql)
         }
         qProtected._joins.push({ type:options.type, table, on, params:options.params })
-        return instance
+        return o
     }
 
     protected joinBuilder<NewTable extends Constructor<any>>(builder:JoinBuilder<NewTable>, typeHint:JoinType="JOIN") 
@@ -312,8 +312,8 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 
     protected addParams(params?:Record<string,any>) {
         if (params && IS.rec(params)) {
-            for (const [key, value] of Object.entries(params)) {
-                this.params[key] = value
+            for (const [key, val] of Object.entries(params)) {
+                this.params[key] = val
             }
         }
     }
@@ -330,10 +330,10 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             if (!IS.arr(values)) throw new Error(`${op} requires an array of property names, but was: ${toStr(values)}`)
             let columnNames = [] as string[]
             for (const key of values) {
-                const prop = this.meta.props.find(x => x.name === key)
-                if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
-                if (!prop.column) throw new Error(`Property ${key} is not a column`)
-                columnNames.push(prop.column.name)
+                const p = this.meta.props.find(x => x.name === key)
+                if (!p) throw new Error(`Property ${key} not found in ${this.meta.name}`)
+                if (!p.column) throw new Error(`Property ${key} is not a column`)
+                columnNames.push(p.column.name)
             }
             const sql = columnNames.map(name => `${this.$.quoteColumn(name)} ${Sql.ops[op]}`).join(` ${condition} `)
             this._where.push({ condition, sql })
@@ -341,10 +341,10 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             //return
         } else if (IS.rec(values)) {
             for (const [key, value] of Object.entries(values)) {
-                const prop = this.meta.props.find(x => x.name === key)
-                if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
-                if (!prop.column) throw new Error(`Property ${key} is not a column`)
-                const sqlLeft = `${this.$.quoteColumn(prop.column.name)} ${sqlOp}`
+                const p = this.meta.props.find(x => x.name === key)
+                if (!p) throw new Error(`Property ${key} not found in ${this.meta.name}`)
+                if (!p.column) throw new Error(`Property ${key} is not a column`)
+                const sqlLeft = `${this.$.quoteColumn(p.column.name)} ${sqlOp}`
                 if (IS.arr(value)) {
                     let sqlValues = ``
                     for (const v in value) {
@@ -355,7 +355,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
                     }
                     this._where.push({ condition, sql:`${sqlLeft} (${sqlValues})`})
                 } else {
-                    this._where.push({ condition, sql:`${sqlLeft} $${prop.name}`})
+                    this._where.push({ condition, sql:`${sqlLeft} $${p.name}`})
                     let paramValue = op === 'startsWith'
                         ? `${value}%`
                         : op === 'endsWith'
@@ -363,7 +363,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
                         : op === 'contains'
                         ? `%${value}%`
                         : value
-                    this.params[prop.name] = paramValue
+                    this.params[p.name] = paramValue
                 }
             }
         } else throw new Error(`Unsupported ${condition} value: ${values}`)
@@ -386,8 +386,8 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         for (let i = 0; i<this._joins.length; i++) {
             const { type, on } = this._joins[i]
             const ref = this.refs[i + 1]
-            const meta = this.metas[i + 1]
-            const quotedTable = this.$.quoteTable(meta.tableName)
+            const M = this.metas[i + 1]
+            const quotedTable = this.$.quoteTable(M.tableName)
             const refAs = ref.$ref.as
             const sqlAs = refAs && refAs !== quotedTable
                 ? ` ${refAs}`
@@ -465,14 +465,14 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
     protected _take:number | undefined
     protected _limit?:string
 
-    copyInto(instance:SelectQuery<any>) {
-        super.copyInto(instance)
-        instance._select = Array.from(this._select)
-        instance._groupBy = Array.from(this._groupBy)
-        instance._having = Array.from(this._having)
-        instance._skip = this._skip
-        instance._take = this._take
-        return instance
+    copyInto(o:SelectQuery<any>) {
+        super.copyInto(o)
+        o._select = Array.from(this._select)
+        o._groupBy = Array.from(this._groupBy)
+        o._having = Array.from(this._having)
+        o._skip = this._skip
+        o._take = this._take
+        return o
     }
 
     clone(): SelectQuery<Tables> { return super.clone() as SelectQuery<Tables> }
@@ -487,10 +487,10 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             const frag = assertSql(options.call(this, ...this.refs))
             this._groupBy.push(this.mergeParams(frag))
         } else if (IS.rec(options)) {
-            const frag = IS.fn((options as any).build)
+            const f = IS.fn((options as any).build)
                 ? (options as any).build(this.refs)
                 : assertSql(options)
-            this._groupBy.push(this.mergeParams(frag))
+            this._groupBy.push(this.mergeParams(f))
         } else throw EX.arg(options)
         return this
     }
@@ -505,10 +505,10 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             const frag = assertSql(options.call(this, ...this.refs))
             this._having.push(this.mergeParams(frag))
         } else if (IS.rec(options)) {
-            const frag = IS.fn((options as any).build)
+            const f = IS.fn((options as any).build)
                 ? (options as any).build(this.refs)
                 : assertSql(options)
-            this._having.push(this.mergeParams(frag))
+            this._having.push(this.mergeParams(f))
         } else throw EX.arg(options)
         return this
     }
@@ -523,10 +523,10 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             const frag = assertSql(options.call(this, ...this.refs))
             this._orderBy.push(this.mergeParams(frag))
         } else if (IS.rec(options)) {
-            const frag = IS.fn((options as any).build)
+            const f = IS.fn((options as any).build)
                 ? (options as any).build(this.refs)
                 : assertSql(options)
-            this._orderBy.push(this.mergeParams(frag))
+            this._orderBy.push(this.mergeParams(f))
         } else throw EX.arg(options)
         return this
     }
@@ -547,15 +547,15 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         } else if (IS.rec(options)) {
             const o = options as SelectOptions
             if (o.sql) {
-                const frag = o.sql
-                this._select.push(frag.sql)
-                this.addParams(frag.params)
+                const f = o.sql
+                this._select.push(f.sql)
+                this.addParams(f.params)
             }
             if (o.props) {
                 for (const name of o.props) {
-                    const column = this.meta.props.find(x => x.name == name)?.column
-                    if (column) {
-                        this._select.push(this.quoteColumn(column.name))
+                    const col = this.meta.props.find(x => x.name == name)?.column
+                    if (col) {
+                        this._select.push(this.quoteColumn(col.name))
                     }
                 }
             }
@@ -584,8 +584,8 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         if (take == null && skip == null) {
             this._limit = undefined
         } else {
-            const frag = this.$.dialect.sqlLimit(this._skip, this._take) 
-            this._limit = this.mergeParams(frag)
+            const f = this.$.dialect.sqlLimit(this._skip, this._take) 
+            this._limit = this.mergeParams(f)
         }
         return this
     }
@@ -664,23 +664,23 @@ export class UpdateQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         if (!options) {
             this._set.length = 0
         } if (IS.tpl(options)) {
-            const frag = this.$(options as TemplateStringsArray, ...params)
-            this._set.push(this.mergeParams(frag))
+            const f = this.$(options as TemplateStringsArray, ...params)
+            this._set.push(this.mergeParams(f))
         } else if (IS.fn(options)) {
-            const frag = assertSql(options.call(this, ...this.refs))
-            this._set.push(this.mergeParams(frag))
+            const f = assertSql(options.call(this, ...this.refs))
+            this._set.push(this.mergeParams(f))
         } else if (IS.rec(options)) {
             
             if ("sql" in options) {
-                const frag = options as Fragment
-                this._set.push(this.mergeParams(frag))
+                const f = options as Fragment
+                this._set.push(this.mergeParams(f))
             } else {
                 for (const [key, value] of Object.entries(options)) {
-                    const prop = this.meta.props.find(x => x.name === key)
-                    if (!prop) throw new Error(`Property ${key} not found in ${this.meta.name}`)
-                    if (!prop.column) throw new Error(`Property ${key} is not a column`)
-                    this.params[prop.name] = value
-                    this._set.push(`${this.$.quote(prop.column.name)} = $${prop.name}`)
+                    const p = this.meta.props.find(x => x.name === key)
+                    if (!p) throw new Error(`Property ${key} not found in ${this.meta.name}`)
+                    if (!p.column) throw new Error(`Property ${key} is not a column`)
+                    this.params[p.name] = value
+                    this._set.push(`${this.$.quote(p.column.name)} = $${p.name}`)
                 }
             }
         }

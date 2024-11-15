@@ -40,8 +40,7 @@ export class PostgreSql extends Sqlite
         super()
         this.dialect = new PostgreSqlDialect()
         this.$ = this.dialect.$
-        this.types = new PostgreSqlTypes()
-        this.schema = this.$.schema = new PostgreSqlSchema(this)
+        this.schema = this.$.schema = new PostgreSqlSchema(this, this.$, new PostgreSqlTypes())
     }
 }
 
