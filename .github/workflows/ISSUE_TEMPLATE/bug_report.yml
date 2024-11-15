@@ -1,0 +1,54 @@
+name: "\U0001F41E Bug report"
+description: Report an Issue with litdb
+labels: ['bug: pending triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        "Thanks for taking the time to fill out this bug report!"
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Describe the issue
+      description: A clear and concise description of what the Issue is.
+      placeholder: Bug description
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Clear steps to reproduce the behavior or link to PR with failing test or GitHub project containing a stand-alone repro.
+      placeholder: Reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen.
+      placeholder: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Info
+      description: The OS, litdb packages and JS Runtime you're using (e.g. Node.js, Bun, Deno)
+      render: shell
+      placeholder: System, litdb, versions, JS Runtime
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context or screenshots about the issue here.
+  - type: checkboxes
+    id: checkboxes
+    attributes:
+      label: Validations
+      description: Before submitting the issue, please make sure you do the following
+      options:
+        - label: Confirm [Issue is reproducible](https://litdb.dev/bug-report) from the information provided
+          required: true
