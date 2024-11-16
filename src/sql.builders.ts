@@ -451,7 +451,6 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
 type SelectOptions = {
     props?:string[],
     columns?:string[],
-    sql?:Fragment,
 }
 
 export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<Tables> {
@@ -546,11 +545,6 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
             this._select.push(this.mergeParams(sql))
         } else if (IS.rec(options)) {
             const o = options as SelectOptions
-            if (o.sql) {
-                const f = o.sql
-                this._select.push(f.sql)
-                this.addParams(f.params)
-            }
             if (o.props) {
                 for (const name of o.props) {
                     const col = this.meta.props.find(x => x.name == name)?.column
