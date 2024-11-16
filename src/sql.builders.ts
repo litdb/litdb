@@ -186,8 +186,17 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         const q = this.createInstance(cls)
         this.copyInto(q as WhereQuery<any>)
 
-        const refs = builder.tables.map(cls => this.refOf(cls) ?? this.$.ref(cls))
+        const refs = builder.tables.map(cls => q.refOf(cls) ?? q.$.ref(cls))
         let { type, on, params } = builder.build(refs, typeHint)
+        
+        // Update ref in-case it was assigned an alias
+        for (let i = 0; i<q.refs.length; i++) {
+            if (refs[0].$ref.cls == q.refs[i].$ref.cls) {
+                q.refs[i] = refs[0]
+                break
+            }
+        }
+
         if (on && params) {
             on = this.mergeParams({ sql:on, params })
         }

@@ -32,7 +32,7 @@ describe('SQLite JOIN Tests', () => {
                 .leftJoin((i, o, f) => $`${o.id} = ${i.orderId} LEFT JOIN ${f} ON ${o.freightId} = ${f.id}`))
             .select('*')
         )).toContain(`FROM "Contact" c JOIN "Order" ON c."id" = "Order"."contactId"`
-            + ' LEFT JOIN "OrderItem" ON "Order"."id" = "OrderItem"."orderId"'
+            + ' LEFT JOIN "OrderItem" i ON "Order"."id" = i."orderId"'
             + ' LEFT JOIN "Freight" ON "Order"."freightId" = "Freight"."id"'
         )
         expect(str($.from(Contact).as('c')
@@ -47,7 +47,8 @@ describe('SQLite JOIN Tests', () => {
 
     it ('Can select multiple joined tables with alias', () => {
 
-        const expectedSql = 'FROM "Contact" c JOIN "Order" ON c."id" = "Order"."contactId"' 
+        const expectedSql 
+            = 'FROM "Contact" c JOIN "Order" ON c."id" = "Order"."contactId"' 
             + ' JOIN "OrderItem" ON "Order"."id" = "OrderItem"."orderId"' 
             + ' LEFT JOIN "Freight" ON "Order"."freightId" = "Freight"."id"'
 

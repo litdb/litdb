@@ -160,7 +160,7 @@ export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBu
     exprs:{ type:JoinType, expr:((refs:ConstructorsToRefs<Tables>) => Fragment) }[]=[]
 
     params:Record<string,any> = {}
-    alias:string =''
+    alias:string = ''
     buildOn?:(refs:ConstructorsToRefs<Tables>, params:Record<string,any>) => string
 
     constructor(public $:ReturnType<typeof Sql.create>, ...tables:Tables) {
@@ -199,8 +199,8 @@ export class SqlJoinBuilder<Tables extends Constructor<any>[]> implements JoinBu
     }
 
     build(refs:ConstructorsToRefs<Tables>) {
-        if (this.alias != null) {
-            refs[0].$ref.as = this.$.ref(refs[0].$ref.cls, this.alias)
+        if (this.alias) {
+            refs[0] = this.$.ref(refs[0].$ref.cls, this.alias)
         }
         const params:Record<string,any> = {}
         const sqls:string[] = []

@@ -289,7 +289,7 @@ describe('SQLite WHERE Tests', () => {
               AND EXISTS (SELECT 1 FROM ${qContact} WHERE ${qId} IN ($_2,$_3,$_4)) 
               AND ${qFirstName} = $_5`))
 
-              expect(params).toEqual({
+        expect(params).toEqual({
             _1: 20,
             _2: 10,
             _3: 20,
