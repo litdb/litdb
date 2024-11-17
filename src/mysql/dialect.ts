@@ -1,21 +1,10 @@
-import type { Dialect, Fragment } from "../types"
-import { DefaultStrategy } from "../connection"
-import { Sql } from "../sql"
+import { DialectBase } from "../connection"
+import type { Fragment } from "../types"
 import { isQuoted } from "../utils"
 
-export class MySqlDialect implements Dialect {
-    $:ReturnType<typeof Sql.create>
-    strategy:DefaultStrategy = new DefaultStrategy()
-    
-    constructor() {
-        this.$ = Sql.create(this)
-    }
+export class MySqlDialect extends DialectBase {
 
     quote(name: string): string { return isQuoted(name) ? name : "`" + name + "`" }
-    
-    quoteTable(name: string): string { return isQuoted(name) ? name : this.quote(this.strategy.tableName(name)) }
-
-    quoteColumn(name: string): string { return isQuoted(name) ? name : this.quote(this.strategy.columnName(name)) }
 
     sqlLimit(offset?: number, limit?: number): Fragment {
         if (offset == null && limit == null)

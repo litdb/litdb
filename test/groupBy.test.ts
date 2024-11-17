@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 import { sqlite as $ } from '../src'
-import { Contact, Order } from './data'
+import { Contact, Order, OrderItem } from './data'
 import { str } from './utils'
 
 describe('SQLite GROUP BY Tests', () => {
@@ -105,6 +105,23 @@ describe('SQLite GROUP BY Tests', () => {
             .groupBy($.groupBy(Contact,Order).add(c => $`${c.firstName}`).add((_,o) => $`${o.freightId}`)))).toBe(expected)
         expect(str(q.clone()
             .groupBy($.groupBy(Contact,Order).add`${c.firstName}`.add`${o.freightId}`))).toBe(expected)
+    })
+
+    it ('Can use groupBy builder on out of order tables', () => {
+
+        expect(str($.from(Contact,'c')
+            .join(Order, { as:'o', on:(c,o) => $`${c.id} = ${o.contactId}` })
+            .join(OrderItem, { as:'i', on:(o,i) => $`${o.id} = ${i.orderId}` })
+            .groupBy(
+                $.groupBy(Contact,OrderItem)
+                    .add((c,i) => $`${c.firstName}, ${i.name}`)
+            )
+            .select((c,o,i) => $`${c.firstName}, ${i.name}, SUM(${o.total}) AS total`)))
+        .toEqual(str(`SELECT c."firstName", i."name", SUM(o."total") AS total 
+            FROM "Contact" c 
+            JOIN "Order" o ON c."id" = o."contactId" 
+            JOIN "OrderItem" i ON o."id" = i."orderId" 
+            GROUP BY c."firstName", i."name"`))
     })
 
 })

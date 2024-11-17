@@ -2,7 +2,9 @@ import type {
     Constructor, First, Last, Fragment, TypeRef, TypeRefs, WhereOptions, 
     GroupByBuilder, HavingBuilder, JoinBuilder, OrderByBuilder, SqlBuilder,
     JoinDefinition, JoinParams, JoinType,
-    IntoFragment, 
+    IntoFragment,
+    ColumnDefinition,
+    TableDefinition, 
 } from "./types"
 import { Meta, type } from "./meta"
 import { assertSql } from "./schema"
@@ -306,9 +308,9 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
     }
 
     quote(symbol:string) { return this.$.quote(symbol) }
-    quoteTable(table:string) { return this.$.quoteTable(table) }
+    quoteTable(table:string|TableDefinition) { return this.$.quoteTable(table) }
     
-    quoteColumn(column:string) { 
+    quoteColumn(column:string|ColumnDefinition) { 
         const as = this.ref.$ref.as
         const prefix = as ? as + '.' : ''
         return prefix + this.$.quoteColumn(column) 
@@ -353,7 +355,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
                 const p = this.meta.props.find(x => x.name === key)
                 if (!p) throw new Error(`Property ${key} not found in ${this.meta.name}`)
                 if (!p.column) throw new Error(`Property ${key} is not a column`)
-                const sqlLeft = `${this.$.quoteColumn(p.column.name)} ${sqlOp}`
+                const sqlLeft = `${this.$.quoteColumn(p.column)} ${sqlOp}`
                 if (IS.arr(value)) {
                     let sqlValues = ``
                     for (const v in value) {
@@ -558,7 +560,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
                 for (const name of o.props) {
                     const col = this.meta.props.find(x => x.name == name)?.column
                     if (col) {
-                        this._select.push(this.quoteColumn(col.name))
+                        this._select.push(this.quoteColumn(col))
                     }
                 }
             }
@@ -609,7 +611,7 @@ export class SelectQuery<Tables extends Constructor<any>[]> extends WhereQuery<T
         //console.log('buildSelect', this._select)
         const sqlSelect = this._select.length > 0 
             ? this._select.join(', ') 
-            : this.meta.columns.map(x => this.quoteColumn(x.name)).join(', ')
+            : this.meta.columns.map(x => this.quoteColumn(x)).join(', ')
         const sql = `SELECT ${sqlSelect}`
         return sql
     }

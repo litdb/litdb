@@ -29,7 +29,7 @@ export class Sql
     static opKeys = Object.keys(Sql.ops)
 
     public static create(dialect:Dialect) {
-        function $(strings: TemplateStringsArray|string, ...params: any[]) : Fragment {
+        function $(strings:TemplateStringsArray|string, ...params: any[]) : Fragment {
             if (IS.tpl(strings)) {
                 // console.log(`raw`, strings.raw, strings, params)
                 let sb = ''
@@ -95,9 +95,9 @@ export class Sql
         $.quoteTable = dialect.quoteTable.bind(dialect)
     
         function quoteProp(meta:Meta, prop:string) {
-            const p = meta.props.find(x => x.name == prop)?.column
-            if (!p) throw new Error(`${meta.name} does not have a column property ${prop}`)
-            return dialect.quoteColumn(p.name)
+            const c = meta.props.find(x => x.name == prop)?.column
+            if (!c) throw new Error(`${meta.name} does not have a column property ${prop}`)
+            return dialect.quoteColumn(c)
         }
         $.ref = function<Table extends Constructor<any>>(cls:Table, as?:string) : TypeRef<InstanceType<Table>> {
             const meta = Meta.assert(cls)
@@ -236,8 +236,14 @@ export class SqlBuilderBase<Tables extends Constructor<any>[]> {
     build(refs:ConstructorsToRefs<Tables>) {
         const params:Record<string,any> = {}
         const sqls:string[] = []
+        const queryRefs = [] as ConstructorsToRefs<Tables>
+        for (const table of this.tables) {
+            const useRef = refs.find(x => x.$ref.cls === table) ?? this.$.ref(table)
+            queryRefs.push(useRef)
+        }
+
         for (const expr of this.exprs) {
-            const result = expr(refs)
+            const result = expr(queryRefs)
             sqls.push(mergeParams(params, result))
         }
         const sql = sqls.join(this.delimiter)

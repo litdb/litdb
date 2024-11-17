@@ -9,11 +9,14 @@ const Q = (name:string) => Symbol(name)
 const [ qId, qFirstName, qAge, qCity, qContact ] = [ f('id'), f('firstName'), f('age'), f('city'), f('Contact') ]
 const [ sId ] = [ Q(qId) ]
 
+const a = (name:string) => '"' + name + '"'
+const [ aKey, aName ] = [ a('id'), a('firstName') ]
+
 export const selectContact = 'id,firstName,lastName,age,email,phone,address,city,state,postCode,createdAt,updatedAt'
     .split(',').map(c => f(c)).join(', ')
 
 export const selectPerson = 'id,firstName,lastName,email'
-    .split(',').map(c => f(c)).join(', ')
+    .split(',').map(c => a(c)).join(', ')
 
 describe('PostgreSQL WHERE Tests', () => {
 
@@ -187,17 +190,17 @@ describe('PostgreSQL WHERE Tests', () => {
         const key = 1
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(str(sql)).toBe(`SELECT ${selectPerson} FROM ${qContact} WHERE ${qId} = $key`)
+            expect(str(sql)).toBe(`SELECT ${selectPerson} FROM ${qContact} WHERE ${aKey} = $key`)
             expect(params.key).toBe(key)
         }
 
         expect(str($.from(DynamicPerson).where(c => $`${c.key} = ${key}`)))
-            .toContain(`FROM ${qContact} WHERE ${qId} = $_1`)
+            .toContain(`FROM ${qContact} WHERE ${aKey} = $_1`)
 
         assert($.from(DynamicPerson).where({ equals:  { key } }))
         assert($.from(DynamicPerson).where({ op:  ['=',{ key }] }))
-        assert($.from(DynamicPerson).where($(`${qId} = $key`, { key })))
-        assert($.from(DynamicPerson).where({ sql:`${qId} = $key`, params:{ key } }))
+        assert($.from(DynamicPerson).where($(`${aKey} = $key`, { key })))
+        assert($.from(DynamicPerson).where({ sql:`${aKey} = $key`, params:{ key } }))
     })
 
     it (`Can query single Contact with multiple params`, () => {
@@ -226,17 +229,17 @@ describe('PostgreSQL WHERE Tests', () => {
 
         function assert(q:SqlBuilder) {
             const { sql, params } = q.build()
-            expect(str(sql)).toBe(`SELECT ${selectPerson} FROM ${qContact} WHERE ${qId} = $key AND ${qFirstName} = $name`)
+            expect(str(sql)).toBe(`SELECT ${selectPerson} FROM ${qContact} WHERE ${aKey} = $key AND ${aName} = $name`)
             expect(params.key).toBe(key)
         }
 
         expect(str($.from(Person).where(c => $`${c.key} = ${key} AND ${c.name} = ${name}`)))
-            .toContain(`FROM ${qContact} WHERE ${qId} = $_1 AND ${qFirstName} = $_2`)
+            .toContain(`FROM ${qContact} WHERE ${aKey} = $_1 AND ${aName} = $_2`)
 
         assert($.from(Person).where({ equals: { key, name } }))
         assert($.from(Person).where({ op:  ['=',{ key, name }] }))
-        assert($.from(Person).where($(`${qId} = $key AND ${qFirstName} = $name`, { key, name })))
-        assert($.from(Person).where($(`${qId} = $key AND ${qFirstName} = $name`, { key, name })))
+        assert($.from(Person).where($(`${aKey} = $key AND ${aName} = $name`, { key, name })))
+        assert($.from(Person).where($(`${aKey} = $key AND ${aName} = $name`, { key, name })))
     })
 
     it (`Can query single Contact with tagged template`, () => {

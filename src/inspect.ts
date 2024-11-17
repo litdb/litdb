@@ -45,12 +45,10 @@ export class Inspect {
         return to.replace(/\\"/g,'')
     }
   
-    static printDump(obj:any) { console.log(Inspect.dump(obj)) }
-  
     static dumpTable(rows:any[]) : string {
         let mapRows = rows
         let keys = uniqueKeys(mapRows)
-        let colSizes:{[index:string]:number} = {}
+        let sizes:{[index:string]:number} = {}
 
         keys.forEach(k => {
             let max = k.length
@@ -63,32 +61,30 @@ export class Inspect {
                     }
                 }
             })
-            colSizes[k] = max
+            sizes[k] = max
         })
 
         // sum + ' padding ' + |
-        let colSizesLength = Object.keys(colSizes).length
-        let rowWidth = Object.keys(colSizes).map(k => colSizes[k]).reduce((p, c) => p + c, 0) +
-            (colSizesLength * 2) +
-            (colSizesLength + 1)
+        let sizesLen = Object.keys(sizes).length
+        let rowWidth = Object.keys(sizes).map(k => sizes[k]).reduce((p, c) => p + c, 0) +
+            (sizesLen * 2) +
+            (sizesLen + 1)
         let sb:string[] = []
         sb.push(`+${'-'.repeat(rowWidth - 2)}+`)
         let head = '|'
-        keys.forEach(k => head += alignCenter(k, colSizes[k]) + '|')
+        keys.forEach(k => head += alignCenter(k, sizes[k]) + '|')
         sb.push(head)
         sb.push(`|${'-'.repeat(rowWidth - 2)}|`)
 
         mapRows.forEach(row => {
             let to = '|'
-            keys.forEach(k => to += '' + alignAuto(row[k], colSizes[k]) + '|')
+            keys.forEach(k => to += '' + alignAuto(row[k], sizes[k]) + '|')
             sb.push(to)
         })
         sb.push(`+${'-'.repeat(rowWidth - 2)}+`)
 
         return sb.join('\n')
     }
-  
-    static printDumpTable(rows:any[]) { console.log(Inspect.dumpTable(rows)) }
 }
 
 export function Watch(fn:(() => Record<string,any>)|(() => void)) {

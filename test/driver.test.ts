@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import { contacts, Contact, Order } from './data'
 import { $, db } from './db'
-import { useFilterSync, omit, pick } from '../src'
+import { useFilterSync, omit, pick, table, column, SnakeCaseStrategy, DefaultStrategy } from '../src'
 
 const recreateContacts = () => {
     db.dropTable(Contact)
@@ -204,6 +204,85 @@ describe('SQLite Driver Tests', () => {
         expect(db.array(q.clone().where(c => $`${c.id} = ${id}`))).toEqual(contactArrays[0])
         expect(db.array`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = ${id}`).toEqual(contactArrays[0])
         expect(db.array($.sql(`SELECT id, firstName, lastName, age, email, city FROM Contact WHERE id = $id`, { id }))).toEqual(contactArrays[0])
+    })
+
+    it ('Does populate Table columns using alias', () => {
+        @table() class Person {
+            constructor(data?: Partial<Person>) { Object.assign(this, data) }
+            @column("INTEGER",  { autoIncrement:true, alias:'person_id' }) id = 0
+            @column("TEXT",     { required:true, alias:'display_name' }) name = ''
+            @column("TEXT",     { required:true, index:true, unique:true }) email = ''
+            @column("DATETIME", { alias:'created' }) createdAt = new Date()
+        }
+
+        // useFilterSync(db, sql => console.log(sql))
+        db.dropTable(Person)
+        db.createTable(Person)
+
+        db.insertAll([
+            new Person({ name:'John Doe', email:'john.doe@email.org', createdAt: new Date('2025-01-01') }),
+            new Person({ name:'Jane Doe', email:'jane.doe@email.org', createdAt: new Date('2025-01-02') }),
+        ])
+    
+        const people = db.all<Person>($.from(Person).orderBy(p => $`${p.id}`))
+
+        $.log(people)
+
+        expect(people).toEqual([
+            new Person({
+                id: 1,
+                name: "John Doe",
+                email: "john.doe@email.org",
+                createdAt: new Date('2025-01-01')
+            }),
+            new Person({
+                id:2, 
+                name:'Jane Doe', 
+                email:'jane.doe@email.org', 
+                createdAt: new Date('2025-01-02') 
+            })
+        ])
+    })
+
+
+    it ('Does populate Table columns using alias', () => {
+        @table() class Person {
+            constructor(data?: Partial<Person>) { Object.assign(this, data) }
+            @column("INTEGER",  { autoIncrement:true }) id = 0
+            @column("TEXT",     { required:true }) name = ''
+            @column("TEXT",     { required:true, index:true, unique:true, alias:"primaryEmail" }) email = ''
+            @column("DATETIME") createdAt = new Date()
+        }
+
+        // useFilterSync(db, sql => console.log(sql))
+        $.dialect.strategy = new SnakeCaseStrategy()
+        db.dropTable(Person)
+        db.createTable(Person)
+
+        db.insertAll([
+            new Person({ name:'John Doe', email:'john.doe@email.org', createdAt: new Date('2025-01-01') }),
+            new Person({ name:'Jane Doe', email:'jane.doe@email.org', createdAt: new Date('2025-01-02') }),
+        ])
+    
+        const people = db.all<Person>($.from(Person).orderBy(p => $`${p.id}`))
+
+        $.log(people)
+
+        expect(people).toEqual([
+            new Person({
+                id: 1,
+                name: "John Doe",
+                email: "john.doe@email.org",
+                createdAt: new Date('2025-01-01')
+            }),
+            new Person({
+                id:2, 
+                name:'Jane Doe', 
+                email:'jane.doe@email.org', 
+                createdAt: new Date('2025-01-02') 
+            })
+        ])
+        $.dialect.strategy = new DefaultStrategy()
     })
 
 })

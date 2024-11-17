@@ -127,7 +127,7 @@ type ColumnsConfig<T> = {
     [K in keyof Partial<T>]: ColumnConfig & { type: ColumnType|symbol }
 }
 
-export type Changes = { changes: number; lastInsertRowid: number | bigint; }
+export type Changes = { changes: number; lastInsertRowid: number | bigint }
 
 export interface Statement<RetType, ParamsType extends DbBinding[]> {
     get native():any
@@ -160,7 +160,6 @@ export interface TypeConverter {
 export interface NamingStrategy {
     tableName(table:string) : string
     columnName(column:string) : string
-    tableFromDef(def:TableDefinition) : string
 }
 
 // Minimum interface required to use QueryBuilder
@@ -172,9 +171,9 @@ export interface Dialect {
 
     quote(name: string): string
 
-    quoteTable(name: string): string
+    quoteTable(name: string|TableDefinition): string
 
-    quoteColumn(name: string): string
+    quoteColumn(name: string|ColumnDefinition): string
 
     sqlLimit(skip?: number, take?: number): Fragment
 }

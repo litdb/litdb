@@ -28,12 +28,12 @@ export class MySqlSchema extends Schema {
         const unique = col.unique ? 'UNIQUE INDEX' : 'INDEX'
         const name = `idx_${table.name}_${col.name}`.toLowerCase()
         const indexSize = col.type.endsWith('TEXT') ? '(255)' : ''
-        return `CREATE ${unique} ${name} ON ${this.quoteTable(table.name)} (${this.quoteColumn(col.name)}${indexSize})`
+        return `CREATE ${unique} ${name} ON ${this.quoteTable(table)} (${this.quoteColumn(col)}${indexSize})`
     }
 
     sqlColumnDefinition(col: ColumnDefinition): string {
         let type = this.dataType(col)
-        let sb = `${this.quoteColumn(col.name)} ${type}`
+        let sb = `${this.quoteColumn(col)} ${type}`
         if (col.primaryKey) {
             sb += ' PRIMARY KEY'
         }

@@ -8,9 +8,10 @@ import type {
     IntoFragment,
     Constructor,
     Changes,
+    ColumnDefinition,
 } from "./types"
 import { Sql } from "./sql"
-import { IS, propsWithValues, snakeCase, toStr } from "./utils"
+import { IS, isQuoted, propsWithValues, snakeCase, toStr } from "./utils"
 import { Meta } from "./meta"
 import { Schema, DriverRequired } from "./schema"
 
@@ -101,20 +102,21 @@ export class DbConnection {
     prepare<T>(str: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
         : [Statement<T,DbBinding[]>|Statement<T,any>, any[]|Record<string,any>, T|undefined]
     {
+        const C = this.connection
         if (IS.tpl(str)) {
-            let stmt = this.connection.prepare<T,DbBinding[]>(str, ...params)
+            let stmt = C.prepare<T,DbBinding[]>(str, ...params)
             // console.log('tpl', stmt, strings, params)
             return [stmt, params, undefined]
         } else if (IS.obj(str)) {
             if ("build" in str) {
                 let query = str.build()
-                let stmt = this.connection.prepare<T,any>(query.sql)
+                let stmt = C.prepare<T,any>(query.sql)
                 // console.log('build', stmt, query.params)
                 return [stmt, query.params ?? {}, (query as any).into as T]
             } else if ("sql" in str) {
                 let sql = str.sql
                 let params = (str as any).params ?? {}
-                let stmt = this.connection.prepare<T,any>(sql)
+                let stmt = C.prepare<T,any>(sql)
                 return [stmt, params, (str as any).into as T]
             }
         }
@@ -145,15 +147,16 @@ export class SyncDbConnection {
         const ret:Changes = { changes:0, lastInsertRowid:0 } 
         if (!row) return ret
         const cls = row.constructor as ReflectMeta
+        const S = this.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             const onlyProps = options?.onlyProps ?? propsWithValues(row)
             const onlyOptions = { onlyProps }
-            let stmt = this.connection.prepareSync<T,any>(this.schema.insert(cls, onlyOptions))
-            const dbRow = this.schema.toDbObject(row, onlyOptions)
+            let stmt = this.connection.prepareSync<T,any>(S.insert(cls, onlyOptions))
+            const dbRow = S.toDbObject(row, onlyOptions)
             return stmt.execSync(dbRow)
         } else {
-            let stmt = this.connection.prepareSync<T,any>(this.schema.insert(cls))
-            const dbRow = this.schema.toDbObject(row)
+            let stmt = this.connection.prepareSync<T,any>(S.insert(cls))
+            const dbRow = S.toDbObject(row)
             return stmt.execSync(dbRow)
         }
     }
@@ -187,16 +190,17 @@ export class SyncDbConnection {
         if (!row)
             return ret
         const cls = row.constructor as ReflectMeta
+        const S = this.schema
         if (options?.onlyProps || options?.onlyWithValues) {
             const pkNames = cls.$props.filter(x => x.column?.primaryKey).map(x => x.column!.name)
             const onlyProps = Array.from(new Set([...(options?.onlyProps ?? propsWithValues(row)), ...pkNames ]))
             const onlyOptions = { onlyProps }
-            let stmt = this.connection.prepareSync<T,any>(this.schema.update(cls, onlyOptions))
-            const dbRow = this.schema.toDbObject(row, onlyOptions)
+            let stmt = this.connection.prepareSync<T,any>(S.update(cls, onlyOptions))
+            const dbRow = S.toDbObject(row, onlyOptions)
             return stmt.execSync(dbRow)
         } else {
-            let stmt = this.connection.prepareSync<T,any>(this.schema.update(cls))
-            const dbRow = this.schema.toDbObject(row)
+            let stmt = this.connection.prepareSync<T,any>(S.update(cls))
+            const dbRow = S.toDbObject(row)
             return stmt.execSync(dbRow)
         }
     }
@@ -231,20 +235,21 @@ export class SyncDbConnection {
     prepareSync<T>(str: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) 
         : [SyncStatement<T,DbBinding[]>|SyncStatement<T,any>, any[]|Record<string,any>, T|undefined]
     {
+        const C = this.connection
         if (IS.tpl(str)) {
-            let stmt = this.connection.prepareSync<T,DbBinding[]>(str, ...params)
+            let stmt = C.prepareSync<T,DbBinding[]>(str, ...params)
             // console.log('tpl', stmt, strings, params)
             return [stmt, params, undefined]
         } else if (IS.obj(str)) {
             if ("build" in str) {
                 let query = str.build()
-                let stmt = this.connection.prepareSync<T,any>(query.sql)
+                let stmt = C.prepareSync<T,any>(query.sql)
                 // console.log('build', stmt, query.params)
                 return [stmt, query.params ?? {}, (query as any).into as T]
             } else if ("sql" in str) {
                 let sql = str.sql
                 let params = (str as any).params ?? {}
-                let stmt = this.connection.prepareSync<T,any>(sql)
+                let stmt = C.prepareSync<T,any>(sql)
                 return [stmt, params, (str as any).into as T]
             }
         }
@@ -255,9 +260,9 @@ export class SyncDbConnection {
         const [stmt, p, into] = this.prepareSync<RetType>(strings, ...params)
         if (into) {
             const use = stmt.as(into as Constructor<RetType>)
-            return (Array.isArray(p) ? use.allSync(...p) : use.allSync(p)) as RetType[]
+            return (IS.arr(p) ? use.allSync(...p) : use.allSync(p)) as RetType[]
         } else {
-            return Array.isArray(p) ? stmt.allSync(...p) : stmt.allSync(p)
+            return IS.arr(p) ? stmt.allSync(...p) : stmt.allSync(p)
         }
     }
 
@@ -265,22 +270,22 @@ export class SyncDbConnection {
         const [stmt, p, into] = this.prepareSync<RetType>(strings, ...params)
         if (into) {
             const use = stmt.as(into as Constructor<RetType>)
-            return (Array.isArray(p) ? use.oneSync(...p) : use.oneSync(p)) as RetType
+            return (IS.arr(p) ? use.oneSync(...p) : use.oneSync(p)) as RetType
         } else {
-            return Array.isArray(p) ? stmt.oneSync(...p) : stmt.oneSync(p)
+            return IS.arr(p) ? stmt.oneSync(...p) : stmt.oneSync(p)
         }
     }
 
     column<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
         const [stmt, p] = this.prepareSync<ReturnValue>(strings, ...params)
-        return Array.isArray(p) 
+        return IS.arr(p) 
             ? stmt.arraysSync(...p).map(x => x[0] as ReturnValue) 
             : stmt.arraysSync(p).map(x => x[0] as ReturnValue) 
     }
 
     value<ReturnValue>(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
         const [stmt, p, into] = this.prepareSync<ReturnValue>(strings, ...params)
-        const value = Array.isArray(p) ? stmt.valueSync(...p) : stmt.valueSync(p)
+        const value = IS.arr(p) ? stmt.valueSync(...p) : stmt.valueSync(p)
         if (into) {
             if (into as any === Boolean) {
                 return !!value
@@ -291,26 +296,26 @@ export class SyncDbConnection {
 
     arrays(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
         const [stmt, p] = this.prepareSync(strings, ...params)
-        return Array.isArray(p) 
+        return IS.arr(p) 
             ? stmt.arraysSync(...p)
             : stmt.arraysSync(p)
     }
 
     array(strings: TemplateStringsArray | SqlBuilder | Fragment, ...params: any[]) {
         const [stmt, p] = this.prepareSync(strings, ...params)
-        return Array.isArray(p) 
+        return IS.arr(p) 
             ? stmt.arraySync(...p)
             : stmt.arraySync(p)
     }
 
     exec(strings:TemplateStringsArray | SqlBuilder | Fragment, ...params:any[]) {
         const [stmt, p] = this.prepareSync(strings, ...params)
-        return Array.isArray(p) ? stmt.execSync(...p) : stmt.execSync(p)
+        return IS.arr(p) ? stmt.execSync(...p) : stmt.execSync(p)
     }
 
     run(strings:TemplateStringsArray | SqlBuilder | Fragment, ...params:any[]) {
         const [stmt, p] = this.prepareSync(strings, ...params)
-        if (Array.isArray(p)) {
+        if (IS.arr(p)) {
             stmt.runSync(...p)
         } else {
             stmt.runSync(p)
@@ -356,13 +361,47 @@ export class ConnectionBase {
 export class DefaultStrategy implements NamingStrategy {
     tableName(table:string) : string { return table }
     columnName(column:string) : string { return column }
-    tableFromDef(def:TableDefinition) : string { return def.alias ?? def.name }
 }
 
 export class SnakeCaseStrategy implements NamingStrategy {
     tableName(table:string) : string { return snakeCase(table) }
     columnName(column:string) : string { return snakeCase(column) }
-    tableFromDef(def:TableDefinition) : string { return snakeCase(def.alias ?? def.name) }
+}
+
+export class DialectBase {
+    $:ReturnType<typeof Sql.create>
+    strategy:DefaultStrategy = new DefaultStrategy()
+    
+    constructor() {
+        this.$ = Sql.create(this)
+    }
+
+    quote(name: string): string { return isQuoted(name) ? name : `"${name}"` }
+    
+    quoteTable(table: string|TableDefinition): string { 
+        return IS.str(table)
+            ? isQuoted(table) 
+                ? table 
+                : this.quote(this.strategy.tableName(table))
+            : this.quote(table.alias ?? this.strategy.tableName(table.name))
+    }
+
+    quoteColumn(column: string|ColumnDefinition): string { 
+        return IS.str(column)
+            ? isQuoted(column) 
+                ? column 
+                : this.quote(this.strategy.columnName(column))
+            : this.quote(column.alias ?? this.strategy.columnName(column.name))
+    }
+
+    sqlLimit(offset?: number, limit?: number): Fragment {
+        if (offset == null && limit == null)
+            throw new Error(`Invalid argument sqlLimit(${offset}, ${limit})`)
+        const frag = offset
+            ? this.$.sql(`LIMIT $limit OFFSET $offset`, { offset, limit:limit ?? -1 })
+            : this.$.sql(`LIMIT $limit`, { limit })
+        return frag
+    }
 }
 
 class SyncFilterConn implements SyncConnection {

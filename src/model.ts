@@ -66,7 +66,6 @@ export function Table<T extends Constructor<any>>(cls:T, def: FluentTableDefinit
 export const DefaultValues = {
     NOW: '{NOW}',
     MAX_TEXT: '{MAX_TEXT}',
-    MAX_TEXT_UNICODE: '{MAX_TEXT_UNICODE}',
     TRUE: '{TRUE}',
     FALSE: '{FALSE}',
 }

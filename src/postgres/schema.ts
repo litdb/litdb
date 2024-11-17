@@ -9,7 +9,7 @@ export class PostgreSqlSchema extends Schema {
             type = type == 'BIGINT' ? 'BIGSERIAL' : 'SERIAL'
         }
 
-        let sb = `${this.quoteColumn(col.name)} ${type}`
+        let sb = `${this.quoteColumn(col)} ${type}`
         if (col.primaryKey) {
             sb += ' PRIMARY KEY'
         }

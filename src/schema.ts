@@ -1,3 +1,4 @@
+import { DefaultStrategy } from "./connection"
 import { converterFor, DateTimeConverter } from "./converters"
 import { Meta } from "./meta"
 import { DefaultValues } from "./model"
@@ -7,7 +8,8 @@ import type {
     TypeConverter,
     Driver,
     DialectTypes,
-    ColumnType
+    ColumnType,
+    Constructor
 } from "./types"
 import { IS } from "./utils"
 
@@ -41,7 +43,6 @@ export class Schema {
     variables: { [key: string]: string } = {
         [DefaultValues.NOW]: 'CURRENT_TIMESTAMP',
         [DefaultValues.MAX_TEXT]: 'TEXT',
-        [DefaultValues.MAX_TEXT_UNICODE]: 'TEXT',
         [DefaultValues.TRUE]: '1',
         [DefaultValues.FALSE]: '0',
     }
@@ -54,8 +55,8 @@ export class Schema {
     }
 
     get dialect() { return this.driver.dialect }
-    quoteTable(name: string) { return this.dialect.quoteTable(name) }
-    quoteColumn(name: string) { return this.dialect.quoteColumn(name) }
+    quoteTable(name: string|TableDefinition) { return this.dialect.quoteTable(name) }
+    quoteColumn(name: string|ColumnDefinition) { return this.dialect.quoteColumn(name) }
 
     sqlTableNames() {
         return "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'"
@@ -68,7 +69,7 @@ export class Schema {
     sqlIndexDefinition(table: TableDefinition, col: ColumnDefinition): string {
         const unique = col.unique ? 'UNIQUE INDEX' : 'INDEX'
         const name = `idx_${table.name}_${col.name}`.toLowerCase()
-        return `CREATE ${unique} ${name} ON ${this.quoteTable(table.name)} (${this.quoteColumn(col.name)})`
+        return `CREATE ${unique} ${name} ON ${this.quoteTable(table.name)} (${this.quoteColumn(col)})`
     }
 
     sqlForeignKeyDefinition(table: TableDefinition, col: ColumnDefinition): string {
@@ -82,8 +83,8 @@ export class Schema {
             ? Array.isArray(ref.table[1]) 
                 ? ref.table[1].map(x => $.quoteColumn(x)).join(',') 
                 : $.quoteColumn(ref.table[1])
-            : refMeta.columns.filter(x => x.primaryKey).map(x => $.quoteColumn(x.name)).join(',')
-        let sql = `FOREIGN KEY (${$.quoteColumn(col.name)}) REFERENCES ${$.quoteTable(refMeta.tableName)}${refKeys ? '(' + refKeys + ')' : ''}`
+            : refMeta.columns.filter(x => x.primaryKey).map(x => $.quoteColumn(x)).join(',')
+        let sql = `FOREIGN KEY (${$.quoteColumn(col)}) REFERENCES ${$.quoteTable(refMeta.table)}${refKeys ? '(' + refKeys + ')' : ''}`
         if (ref.on) {
             sql += ` ON ${ref.on[0]} ${ref.on[1]}`
         }
@@ -114,7 +115,7 @@ export class Schema {
 
     sqlColumnDefinition(col: ColumnDefinition): string {
         let type = this.dataType(col)
-        let sb = `${this.quoteColumn(col.name)} ${type}`
+        let sb = `${this.quoteColumn(col)} ${type}`
         if (col.primaryKey) {
             sb += ' PRIMARY KEY'
         }
@@ -166,9 +167,9 @@ export class Schema {
             props = props.filter(c => options.onlyProps!.includes(c.name))
         }
         let cols = props.map(x => x.column!).filter(c => !c.autoIncrement && !c.defaultValue)
-        let sqlCols = cols.map(c => `${this.quoteColumn(c.name)}`).join(', ')
+        let sqlCols = cols.map(c => `${this.quoteColumn(c)}`).join(', ')
         let sqlParams = cols.map((c) => `$${c.name}`).join(', ')
-        let sql = `INSERT INTO ${this.quoteTable(M.tableName)} (${sqlCols}) VALUES (${sqlParams})`
+        let sql = `INSERT INTO ${this.quoteTable(M.table)} (${sqlCols}) VALUES (${sqlParams})`
         //console.log('Schema.insert', sql)
         return sql
     }
@@ -185,8 +186,8 @@ export class Schema {
         const cols = props.map(x => x.column!)
         const setCols = cols.filter(c => !c.primaryKey)
         const whereCols = cols.filter(c => c.primaryKey)
-        const setSql = setCols.map(c => `${this.quoteColumn(c.name)}=$${c.name}`).join(', ')
-        const whereSql = whereCols.map(c => `${this.quoteColumn(c.name)} = $${c.name}`).join(' AND ')
+        const setSql = setCols.map(c => `${this.quoteColumn(c)}=$${c.name}`).join(', ')
+        const whereSql = whereCols.map(c => `${this.quoteColumn(c)} = $${c.name}`).join(' AND ')
         let sql = `UPDATE ${this.quoteTable(M.tableName)} SET ${setSql}`
         if (whereSql) {
             sql += ` WHERE ${whereSql}`
@@ -202,7 +203,7 @@ export class Schema {
         let props = M.props.filter(x => x.column!!)
         const cols = props.map(x => x.column!)
         const whereCols = cols.filter(c => c.primaryKey)
-        let whereSql = whereCols.map(c => `${this.quoteColumn(c.name)} = $${c.name}`).join(' AND ')
+        let whereSql = whereCols.map(c => `${this.quoteColumn(c)} = $${c.name}`).join(' AND ')
         if (options?.where) {
             let sql = whereSql ? ' AND ' : ' WHERE '
             const where = IS.arr(options.where) ? options.where : [options.where]
@@ -219,7 +220,7 @@ export class Schema {
     }
 
     toDbBindings(table:ClassInstance) {
-        const values:DbBinding[] = []
+        const vals:DbBinding[] = []
         const M = Meta.assert(table.constructor as ReflectMeta)
         const props = M.props.filter(x => x.column!!)
 
@@ -228,16 +229,16 @@ export class Schema {
             const conv = this.converters[x.column!.type]
             if (conv) {
                 const dbVal = conv.toDb(val)
-                values.push(dbVal)
+                vals.push(dbVal)
             } else {
-                values.push(val)
+                vals.push(val)
             }
         })
-        return values
+        return vals
     }
 
     toDbObject(table:ClassInstance, options?:{ onlyProps?:string[] }) {
-        const values: { [key:string]: DbBinding } = {}
+        const vals: { [key:string]: DbBinding } = {}
         const M = Meta.assert(table.constructor as ReflectMeta)
         const props = M.props.filter(x => x.column!!)
 
@@ -248,11 +249,35 @@ export class Schema {
             const conv = this.converters[x.column!.type]
             if (conv) {
                 const dbVal = conv.toDb(val)
-                values[x.column!.name] = dbVal
+                vals[x.column!.name] = dbVal
             } else {
-                values[x.column!.name] = val
+                vals[x.column!.name] = val
             }
         }
-        return values
+        return vals
     }
+
+    toResult(o:any, cls:ClassParam|undefined) {
+        if (cls && o != null && IS.obj(o)) {
+            const M = Meta.assert(cls)        
+            const to = new (cls as Constructor<any>)()
+            const hasStrategy = !(this.$.dialect.strategy instanceof DefaultStrategy)
+            const { dialect, schema } = this.$
+            M.props.filter(p => p.column).forEach(p => {
+                const val = o[p.column!.alias ?? (hasStrategy 
+                    ? dialect.strategy.columnName(p.name) 
+                    : p.name
+                )]
+                const conv = schema.converters[p.column!.type]
+                to[p.name] = conv
+                    ? conv.fromDb(val)
+                    : val
+            })
+            return to
+        }
+        return o == null
+            ? null
+            : o
+    }
+    
 }

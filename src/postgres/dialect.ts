@@ -1,21 +1,7 @@
-import type { Dialect, Fragment } from "../types"
-import { DefaultStrategy } from "../connection"
-import { Sql } from "../sql"
-import { isQuoted } from "../utils"
+import type { Fragment } from "../types"
+import { DialectBase } from "../connection"
 
-export class PostgreSqlDialect implements Dialect {
-    $:ReturnType<typeof Sql.create>
-    strategy:DefaultStrategy = new DefaultStrategy()
-    
-    constructor() {
-        this.$ = Sql.create(this)
-    }
-
-    quote(name: string): string { return isQuoted(name) ? name : `"${name}"` }
-    
-    quoteTable(name: string): string { return isQuoted(name) ? name : this.quote(this.strategy.tableName(name)) }
-
-    quoteColumn(name: string): string { return isQuoted(name) ? name : this.quote(this.strategy.columnName(name)) }
+export class PostgreSqlDialect extends DialectBase {
 
     sqlLimit(offset?: number, limit?: number): Fragment {
         if (offset == null && limit == null)

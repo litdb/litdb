@@ -6,7 +6,9 @@ import type {
 import { 
     Sql, DbConnection, NamingStrategy, SyncDbConnection, SqliteDialect, DefaultStrategy, Schema, IS,
     SqliteSchema, SqliteTypes,
+    Meta,
 } from "../../src"
+import { ClassParam } from "../../src/types"
 
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
@@ -76,25 +78,30 @@ class SqliteStatement<RetType, ParamsType extends DbBinding[]>
     implements Statement<RetType, ParamsType>, SyncStatement<RetType, ParamsType>
 {
     native: BunStatement<RetType, ParamsType>
-    constructor(statement: BunStatement<RetType, ParamsType>) {
+    $:ReturnType<typeof Sql.create>
+    _as?:RetType
+    constructor(statement: BunStatement<RetType, ParamsType>, $:ReturnType<typeof Sql.create>) {
         this.native = statement
+        this.$ = $
     }
 
     as<T extends Constructor<any>>(t:T) {
-        return new SqliteStatement(this.native.as(t))
+        const clone = new SqliteStatement(this.native.as(t), this.$)
+        clone._as = t
+        return clone
     }
 
     all(...params: ParamsType): Promise<RetType[]> {
-        return Promise.resolve(this.native.all(...params))
+        return Promise.resolve(this.all(...params))
     }
     allSync(...params: ParamsType): RetType[] {
-        return this.native.all(...params)
+        return this.native.all(...params).map(x => this.$.schema.toResult(x, this._as as ClassParam))
     }
-    one(...params: ParamsType): Promise<RetType | null> {
-        return Promise.resolve(this.native.get(...params))
+    one(...params:ParamsType): Promise<RetType | null> {
+        return Promise.resolve(this.oneSync(...params))
     }
     oneSync(...params: ParamsType): RetType | null {
-        return this.native.get(...params)
+        return this.$.schema.toResult(this.native.get(...params), this._as as ClassParam)
     }
 
     column<ReturnValue>(...params: ParamsType): Promise<ReturnValue[]> {
@@ -186,9 +193,9 @@ class SqliteConnection implements Connection, SyncConnection {
                     sb += `?${i+1}`
                 }
             }
-            return new SqliteStatement(this.native.query<RetType, ParamsType>(sb))
+            return new SqliteStatement(this.native.query<RetType, ParamsType>(sb), this.$)
         } else {
-            return new SqliteStatement(this.native.query<RetType, ParamsType>(sql))
+            return new SqliteStatement(this.native.query<RetType, ParamsType>(sql), this.$)
         }
     }
 
@@ -202,9 +209,9 @@ class SqliteConnection implements Connection, SyncConnection {
                     sb += `?${i+1}`
                 }
             }
-            return new SqliteStatement(this.native.query<RetType, ParamsType>(sb))
+            return new SqliteStatement(this.native.query<RetType, ParamsType>(sb), this.$)
         } else {
-            return new SqliteStatement(this.native.query<RetType, ParamsType>(sql))
+            return new SqliteStatement(this.native.query<RetType, ParamsType>(sql), this.$)
         }
     }
 
