@@ -1,15 +1,13 @@
-import { Database, Statement as BunStatement } from "bun:sqlite"
+import { Database, Statement as DriverStatement } from "bun:sqlite"
 import type { 
-    Driver, Connection, SyncConnection, DbBinding, Statement, Fragment, SyncStatement, Dialect,
+    Driver, Connection, SyncConnection, DbBinding, Statement, SyncStatement, Dialect,
     Changes, Constructor,
 } from "../../src"
 import { 
     Sql, DbConnection, NamingStrategy, SyncDbConnection, SqliteDialect, DefaultStrategy, Schema, IS,
     SqliteSchema, SqliteTypes,
-    Meta,
 } from "../../src"
 import { ClassParam } from "../../src/types"
-
 
 const ENABLE_WAL = "PRAGMA journal_mode = WAL;"
 
@@ -77,10 +75,10 @@ export function connect(options?:ConnectionOptions|string) {
 class SqliteStatement<RetType, ParamsType extends DbBinding[]>
     implements Statement<RetType, ParamsType>, SyncStatement<RetType, ParamsType>
 {
-    native: BunStatement<RetType, ParamsType>
+    native: DriverStatement<RetType, ParamsType>
     $:ReturnType<typeof Sql.create>
     _as?:RetType
-    constructor(statement: BunStatement<RetType, ParamsType>, $:ReturnType<typeof Sql.create>) {
+    constructor(statement: DriverStatement<RetType, ParamsType>, $:ReturnType<typeof Sql.create>) {
         this.native = statement
         this.$ = $
     }

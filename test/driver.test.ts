@@ -226,7 +226,7 @@ describe('SQLite Driver Tests', () => {
     
         const people = db.all<Person>($.from(Person).orderBy(p => $`${p.id}`))
 
-        $.log(people)
+        // $.log(people)
 
         expect(people).toEqual([
             new Person({
@@ -266,7 +266,7 @@ describe('SQLite Driver Tests', () => {
     
         const people = db.all<Person>($.from(Person).orderBy(p => $`${p.id}`))
 
-        $.log(people)
+        // $.log(people)
 
         expect(people).toEqual([
             new Person({
