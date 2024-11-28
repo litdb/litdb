@@ -90,7 +90,7 @@ If you'd like to see a driver for a specific client, please open or vote for a f
 ## Driver Usage
 
 litdb drivers are lightweight data adapters providing a number of convenience APIs for executing SQL and parameters. 
-They can be used with our without litdb SQL Builders, but offer the most value when used together. 
+They can be used with or without litdb SQL Builders, but offer the most value when used together. 
 
 The same APIs are available across all drivers, so you can easily switch between them. They include both **sync** APIs
 recommended for SQLite libraries that use SQLite's native blocking APIs, whilst **async** APIs should be used for 
