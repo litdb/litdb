@@ -6,7 +6,7 @@ Website: https://litdb.dev
 
 [![](https://litdb.dev/img/bg-video.png)](https://youtu.be/0OVXvhj8nU4)
 
-https://youtu.be/0OVXvhj8nU4
+https://youtu.be/s5TC1n0ZiRI
 
 ## SQL-like
 
