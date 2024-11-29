@@ -4,9 +4,9 @@ litdb contains LINQ-like type-safe SQL builders for TypeScript/JavaScript for wr
 
 Website: https://litdb.dev
 
-[![](https://litdb.dev/img/bg-video.png)](https://youtu.be/0OVXvhj8nU4)
+[![](https://litdb.dev/img/bg-video.png)](https://youtu.be/4s3-K-hggmg)
 
-https://youtu.be/s5TC1n0ZiRI
+https://youtu.be/4s3-K-hggmg
 
 ## SQL-like
 
