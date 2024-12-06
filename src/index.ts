@@ -1,6 +1,7 @@
 import type { 
   Driver, Connection, SyncConnection, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, ColumnDefinition, 
-  TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType, Changes, Constructor,
+  TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType, Changes, Constructor, 
+  ClassParam, ClassInstance, TypeRef, TypeRefs,
 } from "./types"
 import { DbConnection, SyncDbConnection, ConnectionBase, DefaultStrategy, SnakeCaseStrategy, useFilter, useFilterSync } from "./connection"
 import { WhereQuery, SelectQuery, UpdateQuery, DeleteQuery, } from "./sql.builders"
@@ -31,6 +32,7 @@ const postgres = (() => { return PostgreSql.init().$ })()
 export { 
   Driver, Connection, SyncConnection, DbBinding, Statement, SyncStatement, Fragment, TableDefinition, ColumnDefinition, 
   TypeConverter, NamingStrategy, SqlBuilder, ReflectMeta, Dialect, DialectTypes, ColumnType, Changes, Constructor,
+  ClassParam, ClassInstance, TypeRef, TypeRefs,
   Sql,
   Meta,
   Schema,
