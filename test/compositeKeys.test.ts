@@ -16,7 +16,7 @@ export class Foo {
     misc = ''
 }
 
-describe.only('SQLite Driver Composite Keys Tests', () => {
+describe('SQLite Driver Composite Keys Tests', () => {
   
     it ('Does support composite keys', () => {
         db.dropTable(Foo)
