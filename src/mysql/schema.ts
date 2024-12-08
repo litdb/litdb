@@ -31,10 +31,10 @@ export class MySqlSchema extends Schema {
         return `CREATE ${unique} ${name} ON ${this.quoteTable(table)} (${this.quoteColumn(col)}${indexSize})`
     }
 
-    sqlColumnDefinition(col: ColumnDefinition): string {
+    sqlColumnDefinition(col: ColumnDefinition, opt?:{ compositeKeys?:boolean }): string {
         let type = this.dataType(col)
         let sb = `${this.quoteColumn(col)} ${type}`
-        if (col.primaryKey) {
+        if (col.primaryKey && !opt?.compositeKeys) {
             sb += ' PRIMARY KEY'
         }
         if (col.autoIncrement) {

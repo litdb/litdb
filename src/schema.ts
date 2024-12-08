@@ -113,10 +113,10 @@ export class Schema {
             : ''
     }
 
-    sqlColumnDefinition(col: ColumnDefinition): string {
+    sqlColumnDefinition(col: ColumnDefinition, opt?:{ compositeKeys?:boolean }): string {
         let type = this.dataType(col)
         let sb = `${this.quoteColumn(col)} ${type}`
-        if (col.primaryKey) {
+        if (col.primaryKey && !opt?.compositeKeys) {
             sb += ' PRIMARY KEY'
         }
         if (col.autoIncrement) {
@@ -141,12 +141,19 @@ export class Schema {
     createTable(table:ClassParam) {
         const M = Meta.assert(table)
         const cols = M.columns
-        let sqlCols = cols.map(c => this.sqlColumnDefinition(c))
+        const compositeKeys = cols.filter(c => c.primaryKey).length > 1
+        let sqlCols = cols.map(c => this.sqlColumnDefinition(c, { compositeKeys }))
         const foreignKeys = cols.filter(c => c.references)
             .map(c => this.sqlForeignKeyDefinition(M.table, c))
+        let constraints = []
+        if (compositeKeys) {
+            const keys = cols.filter(c => c.primaryKey).map(c => this.quoteColumn(c))
+            constraints.push(`PRIMARY KEY (${keys.join(',')})`)
+        }
         const definitions = [
             sqlCols,
             foreignKeys,
+            constraints,
         ].filter(x => x.length)
             .map(x => x.join(',\n  '))
             .join(',\n  ')

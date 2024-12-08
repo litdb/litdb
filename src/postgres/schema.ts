@@ -3,14 +3,14 @@ import { ColumnDefinition } from "../types"
 
 export class PostgreSqlSchema extends Schema {
 
-    sqlColumnDefinition(col: ColumnDefinition): string {
+    sqlColumnDefinition(col: ColumnDefinition, opt?:{ compositeKeys?:boolean }): string {
         let type = this.dataType(col)
         if (col.autoIncrement) {
             type = type == 'BIGINT' ? 'BIGSERIAL' : 'SERIAL'
         }
 
         let sb = `${this.quoteColumn(col)} ${type}`
-        if (col.primaryKey) {
+        if (col.primaryKey && !opt?.compositeKeys) {
             sb += ' PRIMARY KEY'
         }
         if (col.required) {
