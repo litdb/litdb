@@ -113,7 +113,7 @@ export class Sql
             const meta = Meta.assert(cls)
             if (as == null)
                 as = dialect.quoteTable(meta.tableName)
-            const get = (target: { prefix:string, meta:Meta }, key:string|symbol) => key == '$ref' 
+            const get = (target: { prefix:string, meta:Meta }, key:string|symbol):Object|Symbol => key == '$ref' 
                 ? { cls, as }
                 : key == '$prefix' 
                     ? target.prefix
