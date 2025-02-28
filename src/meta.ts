@@ -35,7 +35,7 @@ export class Meta {
             throw new Error(`${cls.name} does not have a @table annotation`)
         }
         if (!cls.$props || !cls.$props.find((x:any) => x.column!!)) {
-            throw new Error(`${cls.name} does not have any columns, mssing @column?`)
+            throw new Error(`${cls.name} does not have any columns, missing @column?`)
         }
         return cls as ReflectMeta
     }
