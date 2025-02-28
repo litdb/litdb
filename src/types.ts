@@ -58,7 +58,7 @@ export type ColumnType = 'INTEGER' | 'SMALLINT' | 'BIGINT'
     | 'DATE' | 'DATETIME' | 'TIME' | 'TIMEZ' | 'TIMESTAMP' | 'TIMESTAMPZ'
     | 'INTERVAL' | 'BOOLEAN'
     | 'UUID' | 'BLOB' | 'BYTES' | 'BIT'
-    | 'TEXT' | 'VARCHAR' | 'NVARCHAR' | 'CHAR' | 'NCHAR' | 'JSON' | 'JSONB' | 'XML'
+    | 'TEXT' | 'VARCHAR' | 'NVARCHAR' | 'CHAR' | 'NCHAR' | 'JSON' | 'JSONB' | 'XML' | 'OBJECT'
 
 export type DialectTypes = {
     native: ColumnType[]
