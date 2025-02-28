@@ -210,3 +210,10 @@ export function clsName(name:string, ...args:string[]|{ name:string }[]|{ constr
 export function isQuoted(name:string) {
     return name && (name[0] == '"' || name[0] == '`')
 }
+export function trimEnd(s: string, c: string) {
+    let end = s.length
+    while (end > 0 && s[end - 1] === c) {
+        --end
+    }
+    return (end < s.length) ? s.substring(0, end) : s
+}

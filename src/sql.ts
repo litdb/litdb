@@ -3,7 +3,7 @@ import type {
     GroupByBuilder, HavingBuilder, JoinBuilder, JoinType, OrderByBuilder, SqlBuilder, TypeRef 
 } from "./types"
 import { Meta } from "./meta"
-import { asRef, asType, IS, mergeParams, nextParamVal, } from "./utils"
+import { asRef, asType, IS, mergeParams, nextParamVal, trimEnd, } from "./utils"
 import { alignRight, Inspect } from "./inspect"
 import { SelectQuery, UpdateQuery, DeleteQuery } from "./sql.builders"
 import { DriverRequiredProxy, Schema } from "./schema"
@@ -54,7 +54,10 @@ export class Sql
                         sb += sbIn
                     } else if (IS.rec(val) && val.$ref) {
                         // if referencing proxy itself, return its quoted tableName
-                        sb += dialect.quoteTable(Meta.assert(val.$ref.cls).tableName)
+                        const proxyRef = trimEnd(val.$prefix, '.')
+                        sb += proxyRef.includes('.')
+                            ? proxyRef
+                            : dialect.quoteTable(Meta.assert(val.$ref.cls).tableName)
                     } else if (IS.obj(val) && IS.fn(val.build)) {
                         // Merge params of SqlBuilder and append SQL
                         const frag = (val as SqlBuilder).build()
@@ -99,13 +102,24 @@ export class Sql
             if (!c) throw new Error(`${meta.name} does not have a column property ${prop}`)
             return dialect.quoteColumn(c)
         }
+        function unquotedProp(meta:Meta, prefix:string, key:string|Symbol) {
+            const prop = IS.str(key) ? key : key.description!
+            const c = meta.props.find(x => x.name == prop)?.column
+            return !c
+                ? (prefix ?? '') + prop
+                : (prefix ?? '') + (c.alias ?? c.name)
+        }
         $.ref = function<Table extends Constructor<any>>(cls:Table, as?:string) : TypeRef<InstanceType<Table>> {
             const meta = Meta.assert(cls)
             if (as == null)
                 as = dialect.quoteTable(meta.tableName)
             const get = (target: { prefix:string, meta:Meta }, key:string|symbol) => key == '$ref' 
                 ? { cls, as }
-                : Symbol(target.prefix + quoteProp(meta, IS.str(key) ? key : key.description!))
+                : key == '$prefix' 
+                    ? target.prefix
+                    : meta.columns.find(x => x.name == key)?.type === 'OBJECT' || (target.prefix ?? '').indexOf('.') != (target.prefix ?? '').lastIndexOf('.')
+                        ? new Proxy({ prefix: unquotedProp(meta, target.prefix, key) + '.', meta }, { get })
+                        : Symbol(target.prefix + quoteProp(meta, IS.str(key) ? key : key.description!))
             const p = new Proxy({ prefix: as ? as + '.' : '', meta }, { get })
             return p as any as TypeRef<InstanceType<Table>>
         }
