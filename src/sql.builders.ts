@@ -358,11 +358,11 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
                 const sqlLeft = `${this.$.quoteColumn(p.column)} ${sqlOp}`
                 if (IS.arr(value)) {
                     let sqlValues = ``
-                    for (const v in value) {
+                    for (const i in value) {
                         if (sqlValues) sqlValues += ','
                         const nextValue = nextParam(this.params)
                         sqlValues += `$${nextValue}`
-                        this.params[nextValue] = v
+                        this.params[nextValue] = value[i]
                     }
                     this._where.push({ condition, sql:`${sqlLeft} (${sqlValues})`})
                 } else {

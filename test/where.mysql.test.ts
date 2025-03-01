@@ -53,12 +53,16 @@ describe('MySQL WHERE Tests', () => {
         expect(params)
             .toEqual({ firstName:'%oh%', city:'%usti%' })
 
-        expect(str($.from(Contact).where({ in: { id:[10,20,30] } })))
+        const qIn = $.from(Contact).where({ in: { id:[10,20,30] } })
+        expect(str(qIn))
             .toContain(`WHERE ${qId} IN ($_1,$_2,$_3)`)
+        expect(qIn.params).toEqual({ _1:10, _2:20, _3:30 })
 
-        expect(str($.from(Contact).where({ notIn: { id:[10,20,30] } })))
+        const qNotIn = $.from(Contact).where({ notIn: { id:[10,20,30] } })
+        expect(str(qNotIn))
             .toContain(`WHERE ${qId} NOT IN ($_1,$_2,$_3)`)
-
+        expect(qNotIn.params).toEqual({ _1:10, _2:20, _3:30 })
+    
         expect(str($.from(Contact).where({ isNull: Object.keys(search) })))
             .toContain(`WHERE ${qFirstName} IS NULL AND ${qAge} IS NULL AND ${qCity} IS NULL`)
 
