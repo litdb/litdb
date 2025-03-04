@@ -68,6 +68,7 @@ export type DialectTypes = {
 export type ClassParam = ReflectMeta | { constructor:ReflectMeta } | Constructor<any>
 export type ClassInstance = { constructor:ReflectMeta } & Record<string, any> | Record<string, any>
 
+export type ArrayToElementType<T extends readonly any[]> = T extends readonly (infer U)[] ? U : never;
 
 export type TypeRef<T> = T & { $ref: { cls:Constructor<T>, as?:string } }
 
@@ -214,21 +215,21 @@ export interface SqlBuilder {
     build(): Fragment
 }
 
-export type WhereOptions = { 
-    equals?:     Record<string,ScalarValue>
-    notEquals?:  Record<string,ScalarValue>
-    like?:       Record<string,ScalarValue>
-    notLike?:    Record<string,ScalarValue>
-    startsWith?: Record<string,ScalarValue>
-    endsWith?:   Record<string,ScalarValue>
-    contains?:   Record<string,ScalarValue>
-    in?:         Record<string,ScalarValue[]>
-    notIn?:      Record<string,ScalarValue[]>
+export type WhereOptions<T> = {
+    equals?:     Partial<Record<keyof T,ScalarValue>>
+    notEquals?:  Partial<Record<keyof T,ScalarValue>>
+    like?:       Partial<Record<keyof T,ScalarValue>>
+    notLike?:    Partial<Record<keyof T,ScalarValue>>
+    startsWith?: Partial<Record<keyof T,ScalarValue>>
+    endsWith?:   Partial<Record<keyof T,ScalarValue>>
+    contains?:   Partial<Record<keyof T,ScalarValue>>
+    in?:         Partial<Record<keyof T,ScalarValue[]>>
+    notIn?:      Partial<Record<keyof T,ScalarValue[]>>
     isNull?:     string[]
     notNull?:    string[]
-    op?:         [string, Record<string,any>]
+    op?:         [string, Partial<Record<keyof T,any>>]
     rawSql?:     string|string[]
-    params?:     Record<string,any>
+    params?:     Partial<Record<keyof T,any>>
 }
 
 export type JoinType = "JOIN" | "INNER JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" | "FULL JOIN" | "CROSS JOIN"
