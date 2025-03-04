@@ -4,7 +4,8 @@ import type {
     JoinDefinition, JoinParams, JoinType,
     IntoFragment,
     ColumnDefinition,
-    TableDefinition, 
+    TableDefinition,
+    ArrayToElementType, 
 } from "./types"
 import { Meta, type } from "./meta"
 import { assertSql } from "./schema"
@@ -252,11 +253,11 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
         return this.addJoin<NewTable>(joinOptions<NewTable>("CROSS JOIN", asType(cls), options, asRef(cls)))
     }
 
-    where(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) { 
+    where(options:WhereOptions<InstanceType<ArrayToElementType<Tables>>>|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) { 
         return this.and(options, ...params)
     }
 
-    and(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) {
+    and(options:WhereOptions<InstanceType<ArrayToElementType<Tables>>>|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) {
         if (!options && params.length == 0) {
             this._where.length = 0
             return this
@@ -266,11 +267,11 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             const sql = assertSql(options.call(this, ...this.refs))
             return this.condition('AND', sql)
         } else {
-            return this.condition('AND', options as WhereOptions) 
+            return this.condition('AND', options as WhereOptions<InstanceType<ArrayToElementType<Tables>>>) 
         }
     }
 
-    or(options:WhereOptions|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) { 
+    or(options:WhereOptions<InstanceType<ArrayToElementType<Tables>>>|TemplateStringsArray|((...params:TypeRefs<Tables>) => Fragment)|Fragment, ...params:any[]) { 
         if (!options && params.length == 0) {
             this._where.length = 0
             return this
@@ -280,11 +281,11 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             const sql = assertSql(options.call(this, ...this.refs))
             return this.condition('OR', sql)
         } else {
-            return this.condition('OR', options as WhereOptions) 
+            return this.condition('OR', options as WhereOptions<ArrayToElementType<Tables>>) 
         }
     }
 
-    condition(condition:"AND"|"OR", options:WhereOptions|Fragment) {
+    condition(condition:"AND"|"OR", options:WhereOptions<ArrayToElementType<Tables>>|Fragment) {
         
         if ("sql" in options && "params" in options) {
             this._where.push({ condition:condition, sql:this.mergeParams(options as Fragment) })
