@@ -28,13 +28,6 @@ export type ConstructorToInstances<T> = {
 
 export type Params = Record<string, any> | any[];
 
-export type ScalarValue = 
-    | string
-    | bigint
-    | number
-    | boolean
-    | null
-    | symbol
 export type DbBinding =
     | string
     | bigint
@@ -215,21 +208,21 @@ export interface SqlBuilder {
     build(): Fragment
 }
 
-export type WhereOptions<T> = {
-    equals?:     Partial<Record<keyof T,ScalarValue>>
-    notEquals?:  Partial<Record<keyof T,ScalarValue>>
-    like?:       Partial<Record<keyof T,ScalarValue>>
-    notLike?:    Partial<Record<keyof T,ScalarValue>>
-    startsWith?: Partial<Record<keyof T,ScalarValue>>
-    endsWith?:   Partial<Record<keyof T,ScalarValue>>
-    contains?:   Partial<Record<keyof T,ScalarValue>>
-    in?:         Partial<Record<keyof T,ScalarValue[]>>
-    notIn?:      Partial<Record<keyof T,ScalarValue[]>>
-    isNull?:     string[]
-    notNull?:    string[]
-    op?:         [string, Partial<Record<keyof T,any>>]
+export type WhereOptions<T extends object> = {
+    equals?:     { [K in keyof T]?: T[K] }
+    notEquals?:  { [K in keyof T]?: T[K] }
+    like?:       { [K in keyof T]?: T[K] }
+    notLike?:    { [K in keyof T]?: T[K] }
+    startsWith?: { [K in keyof T]?: T[K] }
+    endsWith?:   { [K in keyof T]?: T[K] }
+    contains?:   { [K in keyof T]?: T[K] }
+    in?:         { [K in keyof T]?: T[K][] }
+    notIn?:      { [K in keyof T]?: T[K][] }
+    isNull?:     (keyof T)[]
+    notNull?:    (keyof T)[]
+    op?:         [string, { [K in keyof T]?: T[K] }]
     rawSql?:     string|string[]
-    params?:     Partial<Record<keyof T,any>>
+    params?:     Record<string,any>
 }
 
 export type JoinType = "JOIN" | "INNER JOIN" | "LEFT JOIN" | "RIGHT JOIN" | "OUTER JOIN" | "FULL JOIN" | "CROSS JOIN"
