@@ -26,6 +26,8 @@ describe('SQLite WHERE Tests', () => {
             age: 27,
             city: 'Austin'
         }
+        const props = Object.keys(search) as (keyof typeof search)[]
+
         expect(str($.from(Contact).where({ equals: search })))
             .toContain(`WHERE ${qFirstName} = $firstName AND ${qAge} = $age AND ${qCity} = $city`)
         expect(str($.from(Contact).where({ notEquals: search })))
@@ -63,10 +65,10 @@ describe('SQLite WHERE Tests', () => {
             .toContain(`WHERE ${qId} NOT IN ($_1,$_2,$_3)`)
         expect(qNotIn.params).toEqual({ _1:10, _2:20, _3:30 })
 
-        expect(str($.from(Contact).where({ isNull: Object.keys(search) })))
+        expect(str($.from(Contact).where({ isNull: props })))
             .toContain(`WHERE ${qFirstName} IS NULL AND ${qAge} IS NULL AND ${qCity} IS NULL`)
 
-        expect(str($.from(Contact).where({ notNull: Object.keys(search) })))
+        expect(str($.from(Contact).where({ notNull: ['firstName','age','city'] })))
             .toContain(`WHERE ${qFirstName} IS NOT NULL AND ${qAge} IS NOT NULL AND ${qCity} IS NOT NULL`)
     })
 
@@ -76,6 +78,7 @@ describe('SQLite WHERE Tests', () => {
             age: 27,
             city: 'Austin'
         }
+        const props = Object.keys(search) as (keyof typeof search)[]
 
         expect(str($.from(Contact).where({ equals: search })))
             .toContain(`WHERE ${qFirstName} = $firstName AND ${qAge} = $age AND ${qCity} = $city`)
@@ -110,10 +113,10 @@ describe('SQLite WHERE Tests', () => {
         expect(str($.from(Contact).where({ notIn: { id:[10,20,30] } })))
             .toContain(`WHERE ${qId} NOT IN ($_1,$_2,$_3)`)
 
-        expect(str($.from(Contact).where({ isNull: Object.keys(search) })))
+        expect(str($.from(Contact).where({ isNull: props })))
             .toContain(`WHERE ${qFirstName} IS NULL AND ${qAge} IS NULL AND ${qCity} IS NULL`)
 
-        expect(str($.from(Contact).where({ notNull: Object.keys(search) })))
+        expect(str($.from(Contact).where({ notNull: props })))
             .toContain(`WHERE ${qFirstName} IS NOT NULL AND ${qAge} IS NOT NULL AND ${qCity} IS NOT NULL`)
     })
 
@@ -140,7 +143,7 @@ describe('SQLite WHERE Tests', () => {
             age: 27,
             city: 'Austin'
         }
-        const props = Object.keys(search)
+        const props = Object.keys(search) as (keyof typeof search)[]
 
         const { firstName, age, city } = search
 

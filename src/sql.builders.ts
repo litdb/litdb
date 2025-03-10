@@ -267,7 +267,7 @@ export class WhereQuery<Tables extends Constructor<any>[]> implements SqlBuilder
             const sql = assertSql(options.call(this, ...this.refs))
             return this.condition('AND', sql)
         } else {
-            return this.condition('AND', options as WhereOptions<InstanceType<ArrayToElementType<Tables>>>) 
+            return this.condition('AND', options as WhereOptions<ArrayToElementType<Tables>>) 
         }
     }
 
