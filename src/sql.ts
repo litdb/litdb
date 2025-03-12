@@ -52,9 +52,9 @@ export class Sql
                             sqlParams[name] = item
                         }
                         sb += sbIn
-                    } else if (IS.rec(val) && val.$ref) {
+                    } else if ((IS.rec(val) || IS.fn(val)) && val.$ref) {
                         // if referencing proxy itself, return its quoted tableName
-                        const proxyRef = trimEnd(val.$prefix, '.')
+                        const proxyRef = trimEnd(val.$path ?? '', '.')
                         sb += proxyRef.includes('.')
                             ? proxyRef
                             : dialect.quoteTable(Meta.assert(val.$ref.cls).tableName)
@@ -102,25 +102,27 @@ export class Sql
             if (!c) throw new Error(`${meta.name} does not have a column property ${prop}`)
             return dialect.quoteColumn(c)
         }
-        function unquotedProp(meta:Meta, prefix:string, key:string|Symbol) {
+        function unquotedProp(meta:Meta, path:string, key:string|Symbol) {
             const prop = IS.str(key) ? key : key.description!
             const c = meta.props.find(x => x.name == prop)?.column
             return !c
-                ? (prefix ?? '') + prop
-                : (prefix ?? '') + (c.alias ?? c.name)
+                ? (path ?? '') + prop
+                : (path ?? '') + (c.alias ?? c.name)
         }
         $.ref = function<Table extends Constructor<any>>(cls:Table, as?:string) : TypeRef<InstanceType<Table>> {
             const meta = Meta.assert(cls)
             if (as == null)
                 as = dialect.quoteTable(meta.tableName)
-            const get = (target: { prefix:string, meta:Meta }, key:string|symbol):Object|Symbol => key == '$ref' 
+            const get = (target: { path:string, meta:Meta }, key:string|symbol, receiver:any):Object|Symbol => key == '$ref' 
                 ? { cls, as }
-                : key == '$prefix' 
-                    ? target.prefix
-                    : meta.columns.find(x => x.name == key)?.type === 'OBJECT' || (target.prefix ?? '').indexOf('.') != (target.prefix ?? '').lastIndexOf('.')
-                        ? new Proxy({ prefix: unquotedProp(meta, target.prefix, key) + '.', meta }, { get })
-                        : Symbol(target.prefix + quoteProp(meta, IS.str(key) ? key : key.description!))
-            const p = new Proxy({ prefix: as ? as + '.' : '', meta }, { get })
+                : key == '$path' 
+                    ? target.path
+                    : ['OBJECT','ARRAY'].includes(meta.columns.find(x => x.name == key)?.type ?? '') 
+                        || (target.path ?? '').indexOf('.') != (target.path ?? '').lastIndexOf('.')
+                        || (target.path ?? '').indexOf('[') != -1
+                        ? createPathProxy({ path: unquotedProp(meta, target.path, key), meta })
+                        : Symbol(target.path + quoteProp(meta, IS.str(key) ? key : key.description!))
+            const p = new Proxy({ path: as ? as + '.' : '', meta }, { get })
             return p as any as TypeRef<InstanceType<Table>>
         }
         $.refs = function refs<T extends readonly Constructor[]>(...classes: [...T]): ConstructorToTypeRef<T> {
@@ -273,3 +275,100 @@ export class SqlHavingBuilder<Tables extends Constructor<any>[]> extends SqlBuil
         this.delimiter = '\n  AND '
     }
 }
+
+
+/**
+ * Creates a Proxy that returns a string representation of how it's accessed
+ * 
+ * Examples:
+ * - p.a.b.c → "a.b.c"
+ * - p.a[0][1] → "a[0][1]"
+ * - p["property.with.dots"] → "property.with.dots"
+ * 
+ * @returns {Proxy} A proxy that stringifies to its access path
+ */
+export function createPathProxy(arg:{ path: string, meta:Meta }): any {
+    // Check if a string is a valid JavaScript identifier
+    function isValidIdentifier(str: string): boolean {
+        return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(str)
+    }
+
+    const { path, meta } = arg
+    // Create the handler for this path
+    const handler: ProxyHandler<Function> = {
+        // Handle property access
+        get(target: Function, prop: string | symbol): any {
+
+            if (prop === '$ref') {
+                return { cls: meta.cls, as: path }
+            }
+            if (prop === '$path') {
+                return path
+            }
+
+            // Special handling for built-in conversion methods
+            if (prop === 'toString' || prop === 'valueOf') {
+                return function(): string { return path; }
+            }
+            
+            if (prop === Symbol.toPrimitive) {
+                return function(hint: string): string { return path }
+            }
+            
+            // Calculate the next path segment
+            let nextPath: string
+            
+            // Handle the root path specially
+            if (path === '') {
+                // For the root property, we don't prefix anything
+                if (typeof prop === 'symbol') {
+                    nextPath = `[${String(prop)}]`
+                } else if (typeof prop === 'number' || /^\d+$/.test(prop.toString())) {
+                    nextPath = `[${prop}]`
+                } else if (
+                    typeof prop === 'string' && 
+                    (prop.includes('.') || prop.includes('-') || !isValidIdentifier(prop))
+                ) {
+                    // Special case for property.with.dots at the root level - match the example output
+                    nextPath = `${prop}`
+                } else {
+                    nextPath = String(prop)
+                }
+            } else {
+                // For non-root properties
+                if (typeof prop === 'symbol') {
+                    // Symbol properties always use bracket notation
+                    nextPath = `${path}[${String(prop)}]`
+                } else if (typeof prop === 'number' || /^\d+$/.test(prop.toString())) {
+                    // Numeric indices use simple bracket notation
+                    nextPath = `${path}[${prop}]`
+                } else if (typeof prop === 'string' && !isValidIdentifier(prop)) {
+                    // Properties that can't use dot notation use bracket notation
+                    nextPath = `${path}["${prop}"]`
+                } else {
+                    // Regular identifiers use dot notation
+                    nextPath = `${path}.${prop}`
+                }
+            }
+        
+            // Return a new proxy for the new path
+            return createPathProxy( { path:nextPath, meta})
+        },
+        
+        // Handle calls to the proxy function
+        apply(target: Function, thisArg: any, args: any[]): string {
+            return path
+        }
+    }
+    
+    // Create a function to be proxied
+    const fn = () => path
+    
+    // Add string conversion methods to the function
+    fn.toString = () => path
+    fn.valueOf = () => path
+    
+    // Return the proxied function
+    return new Proxy(fn, handler)
+}
+    
