@@ -129,10 +129,9 @@ describe('SQLite SelectQuery Tests', () => {
 
         ;((expectedSql, expectedParams) => {
             
-            var q = $.from(Order)
             var [o, c] = $.refs(Order,Contact)
 
-            q = q.join(Contact, { 
+            var q = $.from(Order).join(Contact, { 
                 on:() => $`${o.contactId} = ${c.id}` 
             })
 
@@ -143,10 +142,9 @@ describe('SQLite SelectQuery Tests', () => {
                 .select(() => $`COUNT(${o.qty}) * ${multiplier} as count`),
                 expectedSql, expectedParams)
 
-            var q = $.from(Order)
             var [o, c] = $.refs(Order,Contact)
     
-            assert(q
+            assert($.from(Order)
                 //.join(c).on`${o.contactId} = ${c.id}`
                 .join(Contact, { 
                     on:() => $`${o.contactId} = ${c.id}` 
