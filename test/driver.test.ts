@@ -285,4 +285,15 @@ describe('SQLite Driver Tests', () => {
         $.dialect.strategy = new DefaultStrategy()
     })
 
+    it ('Can execute multiple queries concurrently', async () => {
+        const [contacts, orders] = await Promise.all([
+            db.all<Contact>($.from(Contact)),
+            db.all<Order>($.from(Order)),
+        ])
+
+        expect(contacts.length).toBeGreaterThan(0)
+        expect(orders.length).toBeGreaterThan(0)
+        console.log(contacts[0]?.address, orders[0]?.total)
+    })
+
 })
